@@ -23,6 +23,10 @@
   语义即可。若只剩单一算子或演变为完整 compiler/runtime，才重新评估 slug。
 - 重命名的收益目前小于迁移成本：会打断简历、benchmark、Pages、badge、release、PyPI
   包名和上游引用。专业化优先靠清晰边界、可信数据和持续维护，不靠频繁换名。
+- **2026-08-31 更新**：经重新评估后执行了全面更名 `triton-fused-ops` → `trifuse`
+  （品牌与 cuflash/kvtier 构词统一；上述迁移成本已实际发生并全部收口：GitHub 301、
+  6 仓交叉引用、import 名与 `torch.ops.trifuse.*` 命名空间，见 open-infra-ai 根
+  `changelog/2026-08-31-rename-trifuse.md`）。上方原评估记录保留如上。
 
 ## 项目 1：旗舰 = `tiny-llm`
 
