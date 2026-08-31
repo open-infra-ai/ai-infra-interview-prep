@@ -7,7 +7,7 @@
 
 | 版本 | 定位 | 主打项目顺序 |
 |------|------|-------------|
-| v-performance | LLM Inference Performance / GPU Kernel | tiny-llm → cuflash → cuda-foundations + triton-fused-ops |
+| v-performance | LLM Inference Performance / GPU Kernel | tiny-llm → cuflash → cuda-foundations + trifuse |
 | v-serving | LLM 推理运行时与 Serving | paged-serving → tiny-llm → cuflash |
 
 - 公开草稿分别在 [`resume/resume-performance.zh.md`](resume/resume-performance.zh.md)

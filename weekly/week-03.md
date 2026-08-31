@@ -31,7 +31,7 @@ W2 的 tiling/WMMA；标准 attention 公式。
 ## 阅读范围
 
 - open-infra-ai/cuflash：前向 kernel（WMMA 分块、causal 边界跳过）、后向
-- triton-fused-ops：Triton 版 FlashAttention 对照
+- trifuse：Triton 版 FlashAttention 对照
 - Fork flash-attention（P2，"五个一"）：只读 `core` 目录前向主链路
 - 论文：FlashAttention (NeurIPS'22)、FlashAttention-2 (2023)
 

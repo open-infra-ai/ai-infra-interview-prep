@@ -9,7 +9,7 @@
 - **核心考察**：CUDA 编程模型与 GPU 架构、访存与计算分析、FlashAttention 系列算法、
   量化 kernel、profiling（Nsight）、与 PyTorch/推理框架的集成。
 - **我的证据**：以 open-infra-ai/tiny-llm 的真实推理链路为旗舰，cuflash
-  证明 kernel 深度，cuda-foundations 与 triton-fused-ops 提供基础和横向对照
+  证明 kernel 深度，cuda-foundations 与 trifuse 提供基础和横向对照
   （详见 [PROJECT_STRATEGY.md](PROJECT_STRATEGY.md)）。
 
 ## 次方向：LLM 推理运行时与 Serving Engineer

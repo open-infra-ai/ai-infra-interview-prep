@@ -22,7 +22,9 @@ W3 起每周补充当周主题的 3–5 题并自评。此文件是索引 + 示�
   如何跳块？→ KV 在 SRAM 放不下怎么办？→ 与 PagedAttention 的关系（正交：一个管
   计算分块，一个管显存分页）。
 - **代码定位**：open-infra-ai/cuflash 前向 kernel（WMMA 分块 + causal 边界跳过）；
-  triton-fused-ops 的 Triton 版对照。
+  trifuse 的 Triton 版对照。更名说明：trifuse 即原 `triton-fused-ops`
+  （2026-08-31 全面更名，GitHub 旧链接 301 重定向；本仓 handoffs/2026-08-28
+  基线快照中的旧仓名为当时事实，不回写）。
 - **实验证据**：cuflash 的 FP32/FP16/BF16 差分测试与 benchmark（口径见该仓）。
 - **自评**：__待测（W3）__
 
@@ -84,7 +86,7 @@ W3 起每周补充当周主题的 3–5 题并自评。此文件是索引 + 示�
 
 - **答案要点**：定义 schema、注册实现（CPU/CUDA/meta）、autograd；
   坑：schema 与实现签名不一致、fake tensor/meta 注册缺失导致 torch.compile 失败。
-- **代码定位**：open-infra-ai/triton-fused-ops 的 `torch.ops.triton_ops.*` 注册。
+- **代码定位**：open-infra-ai/trifuse 的 `torch.ops.trifuse.*` 注册。
 - **自评**：__待测（W4）__
 
 ---

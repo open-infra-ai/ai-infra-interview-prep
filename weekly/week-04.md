@@ -30,7 +30,7 @@ W2–W3；Python 装饰器基础。
 
 ## 阅读范围
 
-- open-infra-ai/triton-fused-ops：全部算子 + torch.library 注册（主线）
+- open-infra-ai/trifuse：全部算子 + torch.library 注册（主线）
 - Fork Triton-Puzzles：做完核心 puzzle
 - Fork extension-cpp：C++ 扩展模板（快速过）
 - Fork triton（P2，"五个一"）：只读 python/triton 语言前端与 tutorials
@@ -39,7 +39,7 @@ W2–W3；Python 装饰器基础。
 
 1. 选一个算子（如 fused RMSNorm+RoPE 或 SGEMM）：写 CUDA vs Triton 同口径 benchmark（形状矩阵：M/N/K 三档）。
 2. 用 torch.compile（inductor）编译调用了自定义 op 的模型，观察 graph break；补 meta/fake tensor 注册后对比。
-3. 解释 triton-fused-ops 的注册模式与 vLLM/SGLang 的 custom op 接入一致性。
+3. 解释 trifuse 的注册模式与 vLLM/SGLang 的 custom op 接入一致性。
 
 ## 可验证交付物
 

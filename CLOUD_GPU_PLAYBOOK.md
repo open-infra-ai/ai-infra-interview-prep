@@ -110,7 +110,7 @@ CPU / RAM / 内核 / 容器 digest
 |------|---------|------|---------|
 | W1–W2 | Nsight Compute 权限、GEMM/访存 roofline | `cuda-foundations` | 一份 `.ncu-rep` + 指标解释，不只截图 |
 | W3 | FlashAttention shape/因果/GQA 矩阵 | `cuflash` | 正确性矩阵 + roofline + p50/p95 |
-| W4 | 同一算子 CUDA/Triton 对照 | `triton-fused-ops` | 相同 shape/dtype 的速度与误差表 |
+| W4 | 同一算子 CUDA/Triton 对照 | `trifuse` | 相同 shape/dtype 的速度与误差表 |
 | W5–W6 | clean commit 的 TTFT/TPOT、Graphs A/B、长上下文 | **`tiny-llm`** | schema v2 raw JSON + profiler + 正式报告 |
 | W7–W8 | 并发、Paged KV、开环/闭环/Poisson 负载 | `paged-serving` | `summary.json`、逐请求 JSONL、饱和曲线 |
 | W9 | 两卡 NCCL/topology/TP 最小实验 | 独立实验，不新建产品仓 | nccl-tests + 拓扑 + 通信/计算分解 |
@@ -118,7 +118,7 @@ CPU / RAM / 内核 / 容器 digest
 | W11–W12 | 仅补证据，不探索新主题 | 全部 | Demo、面试追问、复现检查 |
 
 优先级始终是 `tiny-llm` > `cuflash` > `paged-serving`。`cuda-foundations` 和
-`triton-fused-ops` 用来解释基础与对照，不应抢占旗舰项目时间。
+`trifuse` 用来解释基础与对照，不应抢占旗舰项目时间。
 
 ## 5. 评测矩阵与图表
 

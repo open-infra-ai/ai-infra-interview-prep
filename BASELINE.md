@@ -7,7 +7,7 @@
 | 能力 | 证据 |
 |------|------|
 | CUDA 编程与 kernel 优化 | cuda-foundations（SGEMM 阶梯，261/261 测试）+ cuflash（FlashAttention 前后向、WMMA、FlashDecoding，81/81 测试）；本机 RTX 3060 Laptop 6GB 可复现 |
-| Triton 算子 | triton-fused-ops（RMSNorm+RoPE/SwiGLU/FlashAttention/SGEMM + torch.library）；RTX 3060 Laptop 123/123 测试通过 |
+| Triton 算子 | trifuse（RMSNorm+RoPE/SwiGLU/FlashAttention/SGEMM + torch.library）；RTX 3060 Laptop 123/123 测试通过 |
 | LLM 推理引擎 | tiny-llm：GGUF、W8A16、分页 KV、CUDA Graph；clean commit `565da79` 的 schema v2 五组配对 A/B 中，Graph off→on 的 TPOT 8.322→5.225 ms（-37.2%）、decode 吞吐 120.168→191.384 tok/s（+59.3%），10 个进程原始 JSONL 已归档；193 项测试可复现 |
 | 推理调度与控制面 | paged-serving（Rust）：分页 KV + continuous batching + HTTP/SSE；默认 232 项测试通过，3 并发 e2e 与 llama.cpp 对齐（量化分歧已记录） |
 | C++ 工程质量 | open-genomics/fq-compressor：C++23、oneTBB、CI、Sanitizer、O(1) 随机访问；fastq-tools 零拷贝 I/O |

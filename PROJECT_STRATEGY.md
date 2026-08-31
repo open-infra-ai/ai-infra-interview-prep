@@ -9,7 +9,7 @@
 - **推理加速旗舰：`open-infra-ai/tiny-llm`**。
 - **Kernel 深挖：`open-infra-ai/cuflash`**。
 - **Serving/调度扩展：`open-infra-ai/paged-serving`**。
-- `cuda-foundations` 与 `triton-fused-ops` 是基础和横向对照，`fq-compressor` 只证明
+- `cuda-foundations` 与 `trifuse` 是基础和横向对照，`fq-compressor` 只证明
   C++/并发/工程质量。
 - 技术仓名称已被简历与证据链接引用，保持冻结。`paged-serving` 对“分页 KV + 推理控制面”
   的表达足够准确，不为追求听起来更大而重命名。
@@ -18,7 +18,7 @@
 
 - `cuflash` 并不奇怪：slug 直接表达 CUDA + FlashAttention，搜索语义明确；
   README 展示名使用更易读的 **CuFlash-Attn**。只有项目离开 Attention 边界时才需要改名。
-- `triton-fused-ops` 相对通用，但与 RMSNorm+RoPE、Gated MLP、FlashAttention 和
+- `trifuse` 相对通用，但与 RMSNorm+RoPE、Gated MLP、FlashAttention 和
   `torch.library` 的横向对照职责一致；README 首屏用“Transformer 推理融合算子”收紧
   语义即可。若只剩单一算子或演变为完整 compiler/runtime，才重新评估 slug。
 - 重命名的收益目前小于迁移成本：会打断简历、benchmark、Pages、badge、release、PyPI
@@ -88,7 +88,7 @@ TPOT、吞吐、失败率和显存曲线；报告 warmup、重复次数、token 
 ## 辅助项目
 
 - `cuda-foundations`：讲 CUDA 编程模型、SGEMM 阶梯、错误配置和性能测量纪律。
-- `triton-fused-ops`：讲相同算子的 Triton 表达、输入契约与 `torch.library` 集成。
+- `trifuse`：讲相同算子的 Triton 表达、输入契约与 `torch.library` 集成。
 - `open-genomics/fq-compressor`：只在需要证明 C++23、oneTBB、数据布局与工程质量时出现，
   不占 AI Infra 简历的主叙事位置。
 
