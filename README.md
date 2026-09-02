@@ -14,7 +14,7 @@
 - 技术仓只放可运行作品；本仓只放个人执行材料，边界以
   [组织仓说明](https://github.com/open-infra-ai/open-infra-ai/blob/master/docs/repository-boundaries.md)
   为准。
-- Star 资源：[stars-index](https://github.com/holtwood/stars-index)。
+- Star 资源：[stars-db](https://github.com/holtwood/stars-db)。
 
 ## 文档地图
 
