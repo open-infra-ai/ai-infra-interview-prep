@@ -9,11 +9,11 @@
 边界：仅验证函数-测试逻辑一致性，不验证 sglang 包导入/CI 容器环境。
 """
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
-func_src = open(
-    "/home/shane/github/lessup/ai-infra-interview-prep/handoffs/deepseek-v4-flash/runs/2026-08-28/UP-01/01_pr_head_func.py"
-).read()
+# 相对脚本自身定位，避免依赖仓库的绝对克隆路径
+func_src = (Path(__file__).resolve().parent / "01_pr_head_func.py").read_text(encoding="utf-8")
 ns = {}
 exec(func_src, ns)
 page_aligned_decode_alloc_lens = ns["page_aligned_decode_alloc_lens"]

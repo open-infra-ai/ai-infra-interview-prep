@@ -10,7 +10,7 @@ BUNDLE_STAMP="$(date +%Y%m%d-%H%M%S)"
 OUT="/tmp/opencode/cloud-bundle-${BUNDLE_STAMP}"
 TARNAME="/tmp/opencode/cloud-bundle-${BUNDLE_STAMP}.tar.gz"
 mkdir -p "$OUT/src/cuflash" "$OUT/src/tiny-llm" "$OUT/models"
-RUN="/home/shane/github/lessup/ai-infra-interview-prep/handoffs/deepseek-v4-flash/runs/2026-08-28/CLOUD"
+RUN="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # 相对脚本自身定位，不依赖仓库绝对路径
 
 echo "== 源码（git archive，tracked-only，天然排除 .git/.zcode/build/凭据）=="
 git -C /home/shane/github/open-infra-ai/cuflash archive --format=tar HEAD | tar -x -C "$OUT/src/cuflash"

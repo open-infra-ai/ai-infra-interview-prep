@@ -43,10 +43,10 @@ ALLOW_EXTERNAL_SOURCE_DOWNLOAD=false
 
 ```text
 技术工作区：/home/shane/github/open-infra-ai
-个人执行仓：/home/shane/github/lessup/ai-infra-interview-prep
-总体计划：/home/shane/github/lessup/ai-infra-interview-prep/handoffs/deepseek-v4-flash/PLAN.md
-任务清单：/home/shane/github/lessup/ai-infra-interview-prep/handoffs/deepseek-v4-flash/TASKS.md
-本提示词：/home/shane/github/lessup/ai-infra-interview-prep/handoffs/deepseek-v4-flash/PROMPT.md
+个人执行仓：/home/shane/github/holtwood/ai-infra-interview-prep
+总体计划：/home/shane/github/holtwood/ai-infra-interview-prep/handoffs/deepseek-v4-flash/PLAN.md
+任务清单：/home/shane/github/holtwood/ai-infra-interview-prep/handoffs/deepseek-v4-flash/TASKS.md
+本提示词：/home/shane/github/holtwood/ai-infra-interview-prep/handoffs/deepseek-v4-flash/PROMPT.md
 ```
 
 优先级：用户最新明确指令 > 目标路径适用的 `AGENTS.md` > `TASKS.md` 当前任务 > `PLAN.md` > 旧计划。
@@ -56,7 +56,7 @@ ALLOW_EXTERNAL_SOURCE_DOWNLOAD=false
 
 按顺序完整读取，不得只看摘要：
 
-1. `/home/shane/github/lessup/ai-infra-interview-prep/AGENTS.md`；
+1. `/home/shane/github/holtwood/ai-infra-interview-prep/AGENTS.md`；
 2. 本目录 `PLAN.md`、`TASKS.md`、`PROMPT.md`；
 3. `/home/shane/github/open-infra-ai/AGENTS.md`；
 4. 当前目标仓从工作区根到目标文件路径上所有适用的 `AGENTS.md`；

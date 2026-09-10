@@ -157,7 +157,7 @@ gh run list -R open-infra-ai/<repo> --limit 10
 ```bash
 rg -n --hidden --glob '!.git/**' 'cuflash-attn|paged-infer|open-infra-ai.github.io/(cuflash-attn|paged-infer)' \
   /home/shane/github/open-infra-ai \
-  /home/shane/github/lessup/ai-infra-interview-prep
+  /home/shane/github/holtwood/ai-infra-interview-prep
 ```
 
 验收：所有命中均完成分类；审计快照、已发布 CHANGELOG、历史计划、fixture 没有进入替换清单。

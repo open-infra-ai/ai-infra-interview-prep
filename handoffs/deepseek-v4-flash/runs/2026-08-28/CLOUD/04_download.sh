@@ -13,7 +13,7 @@ INSTANCE_USER="${INSTANCE_USER:-root}"
 INSTANCE_PORT="${INSTANCE_PORT:-22}"
 INSTANCE_KEY="${INSTANCE_KEY:-$HOME/.ssh/id_ed25519}"
 REMOTE_DIR="${1:-/workspace/results}"
-DEST_DIR="${2:-/home/shane/github/lessup/ai-infra-interview-prep/handoffs/deepseek-v4-flash/runs/2026-08-28/CLOUD/results}"
+DEST_DIR="${2:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/results}"   # 默认落在脚本同级的 results/
 
 [ -f "$INSTANCE_KEY" ] || { echo "错误：密钥文件不存在 $INSTANCE_KEY"; exit 1; }
 [ -r "$INSTANCE_KEY" ] || { echo "错误：密钥不可读（请检查权限）"; exit 1; }
