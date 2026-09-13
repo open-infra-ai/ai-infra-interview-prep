@@ -652,11 +652,12 @@ P0 证据真实性
 ## 15. 本仓文档使用顺序
 
 1. `FINAL_EXECUTION_PLAYBOOK.md`：决定目标岗位、时间和下一条路线。
-2. `P0_P1_AGENT_BACKLOG.md`：选择一个任务 ID。
-3. `L3_L4_DESIGN_REVIEW_PACKAGES.md`：L3/L4 先冻结设计。
-4. `AGENT_EXECUTION_GUIDE.md`：生成任务 Prompt 和验收。
-5. `AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md`：运行 correctness/benchmark/profiler。
-6. `INTERVIEW_MATRIX.md`：准备追问。
-7. `APPLICATION_PLAN.md`：投递和反馈闭环。
+2. `PROJECT_MILESTONES_AND_INTERVIEW_GUIDE.md`：查看该仓阶段成果、跨仓关系和面试讲法。
+3. `P0_P1_AGENT_BACKLOG.md`：选择一个任务 ID。
+4. `L3_L4_DESIGN_REVIEW_PACKAGES.md`：L3/L4 先冻结设计。
+5. `AGENT_EXECUTION_GUIDE.md`：生成任务 Prompt 和验收。
+6. `AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md`：运行 correctness/benchmark/profiler。
+7. `INTERVIEW_MATRIX.md`：准备追问。
+8. `APPLICATION_PLAN.md`：投递和反馈闭环。
 
 执行完成后回到第一步，只重新选择下一个任务，不重新设计整套路线。
