@@ -32,6 +32,8 @@
 | 规划 | [CLOUD_GPU_PLAYBOOK.md](CLOUD_GPU_PLAYBOOK.md) | 云 GPU 选型、预算、实验闭环与评测矩阵 |
 | 执行 | [AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md](AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md) | 逐步实验、性能分析、面试与职业转型手册 |
 | 执行 | [AGENT_EXECUTION_GUIDE.md](AGENT_EXECUTION_GUIDE.md) | 低成本 AI Agent 任务拆分、证据和验收规范 |
+| 执行 | [P0_P1_AGENT_BACKLOG.md](P0_P1_AGENT_BACKLOG.md) | 六个技术仓可直接委托的 P0/P1 单任务包 |
+| 执行 | [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | kernel、并发、FFI 与性能任务的设计评审门禁 |
 | 执行 | [weekly/](weekly/) | 逐周计划（状态见下表） |
 | 执行 | [study-plan.md](study-plan.md) | 每周节奏与执行方法 |
 | 追踪 | [progress-tracker.md](progress-tracker.md) | 进度打卡（每周进度 + 每日打卡） |

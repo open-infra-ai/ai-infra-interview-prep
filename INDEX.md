@@ -23,6 +23,8 @@
 |------|------|--------|
 | [AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md](AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md) | 实验、正确性、benchmark、profiling、面试和转型执行手册 | 每次技术实践前 |
 | [AGENT_EXECUTION_GUIDE.md](AGENT_EXECUTION_GUIDE.md) | 低成本 AI Agent 的任务单、证据、升级和 Prompt 模板 | 委托 AI 执行任务前 |
+| [P0_P1_AGENT_BACKLOG.md](P0_P1_AGENT_BACKLOG.md) | 六仓 P0/P1 任务 ID、代码锚点、范围、验收、证据与依赖 | 给 Agent 派发一个具体技术任务时 |
+| [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | direct paged attention、workspace、FFI、并发和性能矩阵设计门禁 | 任何 L3/L4 任务实现前 |
 
 | 周次 | 主题 | 日期 | 状态 |
 |------|------|------|------|
