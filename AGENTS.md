@@ -26,6 +26,7 @@ AI Infra 面试准备的个人执行仓库:12 周转行计划(2026-08-24 ～ 202
 | `AGENT_EXECUTION_GUIDE.md` | 低成本 Agent 任务拆分、证据和验收规范 | 委托技术任务给其他 Agent 时 |
 | `P0_P1_AGENT_BACKLOG.md` | 六仓可直接委托的 P0/P1 单任务包 | 选择具体实现、测试或实验任务时 |
 | `L3_L4_DESIGN_REVIEW_PACKAGES.md` | 高复杂度 kernel、并发、FFI、schema 与性能评审包 | L3/L4 任务写生产代码前 |
+| `FINAL_EXECUTION_PLAYBOOK.md` | 最终优先级、岗位路线和低成本 Agent 延续流程 | 决定下一步任务或缩减范围时 |
 | `INTERVIEW_MATRIX.md` | 面试题五要素矩阵 | 准备/复盘面试题时 |
 | `APPLICATION_PLAN.md` | 简历与投递规则 | 投递阶段时 |
 | `resume/` | 公开脱敏简历与本地副本规则 | 改简历时 |
@@ -62,6 +63,8 @@ AI Infra 面试准备的个人执行仓库:12 周转行计划(2026-08-24 ～ 202
    `AGENT_EXECUTION_GUIDE.md` 的标准任务单、证据和升级规则执行。
 9. **逐仓任务与高复杂度门禁**:从 `P0_P1_AGENT_BACKLOG.md` 一次选择一个任务;
    L3/L4 必须先完成 `L3_L4_DESIGN_REVIEW_PACKAGES.md` 的 G0-G8 评审。
+10. **停止继续规划**:总路线已冻结;后续优先产生实现、测试、raw evidence、实验与面试
+    复盘。需要选择路线时先读 `FINAL_EXECUTION_PLAYBOOK.md`,不再新增重复总计划。
 
 ## 常用命令(仓库根目录)
 

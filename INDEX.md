@@ -25,6 +25,7 @@
 | [AGENT_EXECUTION_GUIDE.md](AGENT_EXECUTION_GUIDE.md) | 低成本 AI Agent 的任务单、证据、升级和 Prompt 模板 | 委托 AI 执行任务前 |
 | [P0_P1_AGENT_BACKLOG.md](P0_P1_AGENT_BACKLOG.md) | 六仓 P0/P1 任务 ID、代码锚点、范围、验收、证据与依赖 | 给 Agent 派发一个具体技术任务时 |
 | [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | direct paged attention、workspace、FFI、并发和性能矩阵设计门禁 | 任何 L3/L4 任务实现前 |
+| [FINAL_EXECUTION_PLAYBOOK.md](FINAL_EXECUTION_PLAYBOOK.md) | 规划完成后的岗位选择、时间决策、任务优先级、Agent 调度与投递门槛 | 决定下一步或高能力 Agent 支持结束前 |
 
 | 周次 | 主题 | 日期 | 状态 |
 |------|------|------|------|
