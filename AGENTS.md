@@ -24,6 +24,8 @@ AI Infra 面试准备的个人执行仓库:12 周转行计划(2026-08-24 ～ 202
 | `CLOUD_GPU_PLAYBOOK.md` | 云 GPU 选型、预算、实验闭环与评测矩阵 | 采购/租用云算力时 |
 | `AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md` | 逐步实验、性能分析、面试与职业转型手册 | 指导用户动手实践时 |
 | `AGENT_EXECUTION_GUIDE.md` | 低成本 Agent 任务拆分、证据和验收规范 | 委托技术任务给其他 Agent 时 |
+| `P0_P1_AGENT_BACKLOG.md` | 六仓可直接委托的 P0/P1 单任务包 | 选择具体实现、测试或实验任务时 |
+| `L3_L4_DESIGN_REVIEW_PACKAGES.md` | 高复杂度 kernel、并发、FFI、schema 与性能评审包 | L3/L4 任务写生产代码前 |
 | `INTERVIEW_MATRIX.md` | 面试题五要素矩阵 | 准备/复盘面试题时 |
 | `APPLICATION_PLAN.md` | 简历与投递规则 | 投递阶段时 |
 | `resume/` | 公开脱敏简历与本地副本规则 | 改简历时 |
@@ -58,6 +60,8 @@ AI Infra 面试准备的个人执行仓库:12 周转行计划(2026-08-24 ～ 202
 7. **语言**:所有文档用中文;代码标识符保持原文。
 8. **技术任务委托**:跨仓实现、测试、benchmark 或 profiling 任务按
    `AGENT_EXECUTION_GUIDE.md` 的标准任务单、证据和升级规则执行。
+9. **逐仓任务与高复杂度门禁**:从 `P0_P1_AGENT_BACKLOG.md` 一次选择一个任务;
+   L3/L4 必须先完成 `L3_L4_DESIGN_REVIEW_PACKAGES.md` 的 G0-G8 评审。
 
 ## 常用命令(仓库根目录)
 

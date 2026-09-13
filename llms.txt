@@ -10,6 +10,8 @@
 - [AGENTS](AGENTS.md): AI 代理操作指南(仓库地图/约定/命令)
 - [AI_INFRA_PRACTICE_AND_CAREER_GUIDE](AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md): 逐步实验、性能分析、面试与职业转型手册
 - [AGENT_EXECUTION_GUIDE](AGENT_EXECUTION_GUIDE.md): 低成本 AI Agent 任务拆分、证据与验收规范
+- [P0_P1_AGENT_BACKLOG](P0_P1_AGENT_BACKLOG.md): 六仓可直接委托的 P0/P1 单任务包
+- [L3_L4_DESIGN_REVIEW_PACKAGES](L3_L4_DESIGN_REVIEW_PACKAGES.md): 高复杂度 kernel、并发、FFI、schema 与性能设计门禁
 
 ## 规划
 - [TARGET_ROLES](TARGET_ROLES.md): 主/次/可选岗位方向与边界
