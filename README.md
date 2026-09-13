@@ -23,7 +23,7 @@
 | 分类 | 文档 | 内容 |
 |------|------|------|
 | 规划 | [TARGET_ROLES.md](TARGET_ROLES.md) | 主/次/可选岗位方向与边界 |
-| 规划 | [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md) | 2026-08-19 采样的 23 个岗位与技能频次 |
+| 规划 | [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md) | 23 个基线岗位 + 2026-09-13 的 8 个增量岗位与路线校准 |
 | 规划 | [BASELINE.md](BASELINE.md) | 已有优势与真实短板 |
 | 规划 | [SKILL_MATRIX.md](SKILL_MATRIX.md) | 能力等级、目标、证据、差距行动 |
 | 规划 | [TOPIC_WEIGHTS.md](TOPIC_WEIGHTS.md) | 时间权重（合计 288h，可核对）与三档缩放 |
@@ -34,6 +34,8 @@
 | 执行 | [AGENT_EXECUTION_GUIDE.md](AGENT_EXECUTION_GUIDE.md) | 低成本 AI Agent 任务拆分、证据和验收规范 |
 | 执行 | [P0_P1_AGENT_BACKLOG.md](P0_P1_AGENT_BACKLOG.md) | 六个技术仓可直接委托的 P0/P1 单任务包 |
 | 执行 | [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | kernel、并发、FFI 与性能任务的设计评审门禁 |
+| 执行 | [FINAL_EXECUTION_PLAYBOOK.md](FINAL_EXECUTION_PLAYBOOK.md) | 目标岗位选择、最终优先级与低成本 Agent 延续手册 |
+| 执行 | [NEXT_AGENT_START_HERE.md](NEXT_AGENT_START_HERE.md) | 新 Agent 重建当前事实、识别旧 handoff、选择并交接一个任务 |
 | 执行 | [weekly/](weekly/) | 逐周计划（状态见下表） |
 | 执行 | [study-plan.md](study-plan.md) | 每周节奏与执行方法 |
 | 追踪 | [progress-tracker.md](progress-tracker.md) | 进度打卡（每周进度 + 每日打卡） |

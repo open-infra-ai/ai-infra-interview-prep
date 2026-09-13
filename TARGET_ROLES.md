@@ -1,6 +1,6 @@
 # 目标岗位（TARGET_ROLES）
 
-更新日期：2026-08-23。岗位样本与证据见 [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md)。
+更新日期：2026-09-13。岗位样本与证据见 [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md)。
 
 ## 主方向：LLM Inference Performance / GPU Kernel Engineer
 
@@ -35,3 +35,17 @@
 
 - 中国大陆（深圳）与全球远程/在岗均投；样本同时覆盖两地（见 JOB_MARKET_EVIDENCE.md）。
 - 级别定位：性能/系统方向的工程师岗（不限定 junior/senior，按 JD 要求分层投递）。
+
+## 2026-09 市场校准
+
+- **主方向不变，但对外名称收敛为 `LLM Inference Performance / Runtime Engineer`**。
+  最新岗位普遍跨 kernel、runtime、serving 和 benchmark；只写 “CUDA Kernel Engineer”
+  会隐藏 `tiny-llm + paged-serving` 的差异化证据。
+- Kernel 版本简历强调 `cuflash + tiny-llm` 的真实热点、Nsight 归因和数值正确性；
+  Runtime/Serving 版本强调 `tiny-llm + paged-serving` 的 KV 生命周期、调度、尾延迟、
+  backpressure/cancellation 和 C ABI。
+- 不以当前项目投递 Staff/Principal 分布式平台岗位；优先选择允许用强 C++/CUDA/系统背景
+  抵消 LLM Infra 年限不足的 engineer、performance、runtime 和 inference systems 岗位。
+- 只有当最近 20 个真实投递岗位中至少 6 个把 Kubernetes/集群运维列为核心职责，才为
+  Serving 路线增加完整 K8s 实验；否则只保留容器化、metrics 和部署契约，不挤占
+  direct paged attention 与真实压测时间。

@@ -8,7 +8,7 @@
 | 文档 | 内容 | 何时用 |
 |------|------|--------|
 | [TARGET_ROLES.md](TARGET_ROLES.md) | 主/次/可选岗位方向与边界 | 岗位决策、方向调整 |
-| [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md) | 23 个岗位采样与技能频次 | 每两周复查链接有效性 |
+| [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md) | 23 个基线岗位、8 个增量岗位与技能趋势 | 每两周复查链接有效性 |
 | [BASELINE.md](BASELINE.md) | 已有优势与真实短板 | 自评、复盘 |
 | [SKILL_MATRIX.md](SKILL_MATRIX.md) | 能力等级、证据、差距行动 | 每周自评 |
 | [TOPIC_WEIGHTS.md](TOPIC_WEIGHTS.md) | 288h 时间权重 + 三档缩放 | 调时间分配(改后跑 `make verify`) |
@@ -25,6 +25,8 @@
 | [AGENT_EXECUTION_GUIDE.md](AGENT_EXECUTION_GUIDE.md) | 低成本 AI Agent 的任务单、证据、升级和 Prompt 模板 | 委托 AI 执行任务前 |
 | [P0_P1_AGENT_BACKLOG.md](P0_P1_AGENT_BACKLOG.md) | 六仓 P0/P1 任务 ID、代码锚点、范围、验收、证据与依赖 | 给 Agent 派发一个具体技术任务时 |
 | [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | direct paged attention、workspace、FFI、并发和性能矩阵设计门禁 | 任何 L3/L4 任务实现前 |
+| [FINAL_EXECUTION_PLAYBOOK.md](FINAL_EXECUTION_PLAYBOOK.md) | 规划完成后的岗位选择、时间决策、任务优先级、Agent 调度与投递门槛 | 决定下一步或高能力 Agent 支持结束前 |
+| [NEXT_AGENT_START_HERE.md](NEXT_AGENT_START_HERE.md) | 新 Agent 的事实重建、历史陷阱、默认任务、权限和最终交接协议 | 开启任何新的编码 Agent 会话时首先发送 |
 
 | 周次 | 主题 | 日期 | 状态 |
 |------|------|------|------|

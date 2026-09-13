@@ -1,12 +1,53 @@
 # 岗位市场证据（JOB_MARKET_EVIDENCE）
 
-采样日期：**2026-08-19**，n = 23 个岗位，覆盖 Kernel / 推理运行时 / Serving /
+基线采样日期：**2026-08-19**，n = 23 个岗位；最近增量复核：
+**2026-09-13**，n = 8 个仍可访问的岗位。样本覆盖 Kernel / 推理运行时 / Serving /
 编译器 / 分布式方向，同时覆盖全球与中国的代表性公司。数据来源为各公司官方
 招聘页或其聚合页；标注 **(snippet)** 的条目仅取得官方 URL + 搜索摘要，未能
 抓取全文，其技能计数为保守下界。
 
 > 注：原始计划中给出的 OpenAI Ashby 链接已失效（页面不再渲染 JD），已用
 > OpenAI 官网当前等价岗位替换。
+
+## 2026-09-13 增量复核
+
+本轮不重新计算 2026-08 基线频次，而是检查岗位要求是否发生足以改变项目路线的变化。
+
+| 公司 | 岗位 | 新增或被强化的信号 |
+|------|------|--------------------|
+| OpenAI | [Software Engineer, GPT Infrastructure](https://openai.com/careers/software-engineer-gpt-infrastructure-san-francisco/) | 将 kernel/runtime/serving 优化做成可重复平台；明确要求 correctness、profiling、benchmark、artifact provenance、回归、可观测性和安全边界 |
+| OpenAI | [Inference Engineer, Robotics](https://openai.com/careers/inference-engineer-robotics-san-francisco/) | kernel、数据搬运、Serving 效率和可靠性必须在真实多模态 workload 中形成端到端结果 |
+| Perplexity | [MTS, AI Inference Engineer](https://jobs.ashbyhq.com/perplexity/8a976851-9bef-4b07-8d36-567fa9540aef) | Rust Serving、CUDA/CuTe DSL、跨代硬件可移植性、FP8/FP4、NCCL/RDMA、Kubernetes、prefill/decode disaggregation |
+| Modal | [MTS, Research—Inference](https://jobs.ashbyhq.com/modal/73c97bbc-8e27-4c5d-b38b-90b3afdb0d93) | cost/token、tail latency、speculative decoding、disaggregated prefill/decode、KV 管理、量化、弹性扩缩容和生产可观测性 |
+| Baseten | [Software Engineer—Model Performance](https://jobs.ashbyhq.com/baseten/d29e748c-7209-460d-a024-8f77ae0a3d4d) | quantization、speculative decoding、KV reuse、chunked prefill、LoRA，以及 vLLM/SGLang/TRT-LLM 的源码级调试 |
+| Fireworks AI | [MTS, Performance Optimization](https://job-boards.greenhouse.io/fireworksai/jobs/4001152009) | CUDA/Triton、Nsight、跨 kernel 到多机系统的性能归因、benchmark/monitoring 基础设施 |
+| Cerebras | [Senior Performance Engineer, Inference](https://jobs.ashbyhq.com/cerebras/50e42a6b-89b3-49e9-b907-624447e40d82) | 真实客户 workload、公平可复现比较、TTFT/并发延迟/tok/s/TCO，以及竞争产品持续跟踪 |
+| 字节跳动 | [AI 性能优化专家—计算](https://jobs.bytedance.com/experienced/position/7320451652795746586/detail) | Linux C++/Python/Go、分布式调试、异构计算/网络/存储、软硬协同、国产加速器和量化 |
+
+### 相比基线被强化的五个方向
+
+1. **从单点优化转向全栈闭环**：岗位不只要 kernel，而要能沿
+   `workload → scheduler → runtime → kernel → hardware → metric` 定位问题。
+2. **证据工程成为正式能力**：correctness、raw samples、artifact provenance、
+   regression、可观测性和公平 benchmark 不再只是作品集包装，而是岗位职责本身。
+3. **Serving 技术继续前移**：KV reuse、chunked prefill、speculative decoding、
+   prefill/decode disaggregation、tail latency、autoscaling 和 cost/token 反复出现。
+4. **硬件和软件可移植性升温**：CuTe DSL、ROCm、国产加速器、异构 qualification
+   表明“只在一张卡上快”弱于“知道如何验证新硬件、解释 dispatch 和保留回归”。
+5. **生产系统边界更重要**：Rust/C++、Linux、容器、Kubernetes、NCCL/RDMA、
+   incident/retry/checkpoint/security 与性能工程同时出现。
+
+### 对当前路线的判断
+
+- **不需要新增项目，也不需要推翻 Kernel + Runtime/Serving 双主线**。现有仓库与岗位
+  关键词高度同向。
+- 需要把优先级从“继续堆算子/功能”调整为“真实链路、性能归因、故障路径、证据包和一个
+  上游贡献”。
+- CuTe DSL、FP8/FP4、多机 RDMA 和完整 Kubernetes 平台是趋势，但在当前 RTX 3060
+  Laptop 6GB 条件下不应伪造实测。它们只在目标岗位明确要求、且有合适硬件或上游任务时
+  升级为执行项。
+- 多数代表性岗位仍偏 senior。转行候选人不能靠仓库数量补偿经验差距，必须用可复现结果、
+  代码 review、故障分析和上游协作证明生产判断力。
 
 ## 岗位样本
 
