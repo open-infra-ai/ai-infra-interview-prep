@@ -23,7 +23,7 @@
 | 分类 | 文档 | 内容 |
 |------|------|------|
 | 规划 | [TARGET_ROLES.md](TARGET_ROLES.md) | 主/次/可选岗位方向与边界 |
-| 规划 | [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md) | 2026-08-19 采样的 23 个岗位与技能频次 |
+| 规划 | [JOB_MARKET_EVIDENCE.md](JOB_MARKET_EVIDENCE.md) | 23 个基线岗位 + 2026-09-13 的 8 个增量岗位与路线校准 |
 | 规划 | [BASELINE.md](BASELINE.md) | 已有优势与真实短板 |
 | 规划 | [SKILL_MATRIX.md](SKILL_MATRIX.md) | 能力等级、目标、证据、差距行动 |
 | 规划 | [TOPIC_WEIGHTS.md](TOPIC_WEIGHTS.md) | 时间权重（合计 288h，可核对）与三档缩放 |

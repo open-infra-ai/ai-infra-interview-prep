@@ -110,6 +110,51 @@ TPOT、吞吐、失败率和显存曲线；报告 warmup、重复次数、token 
 “PR 必须合入”设为 12 周关键路径。每周固定 2–4 小时做 issue 筛选、复现、review 或小 PR；
 最终证据以上游链接为准，本仓 `community/` 只保存调查过程和复现器。
 
+## 2026-09 招聘趋势映射
+
+最新岗位增量复核没有改变项目组合，只改变完成顺序。先完成现有 P0，再从目标岗位选择一个
+趋势增强项；不要同时追逐 CuTe、FP4、MoE、speculative decoding、disaggregation 和 K8s。
+
+| 市场要求 | 当前承载仓 | 必须先补 | 通过后可选一个增强项 |
+|---------|-----------|---------|----------------------|
+| kernel/data movement/硬件利用率 | `cuda-foundations`、`cuflash`、`tiny-llm` | `CUDA-P1-001`、`CUF-P0-001..004`、`TLLM-P0-002..005`，形成真实 Nsight + correctness 链 | 对一个热点做 CUTLASS/CuTe/Triton 横向实现；无支持硬件时只做设计和编译验证 |
+| KV/continuous batching/tail latency | `tiny-llm`、`paged-serving` | direct paged attention、真实 backend、取消、背压、指标语义和并发矩阵 | chunked prefill 或 prefix/KV reuse；二选一并给端到端 A/B |
+| speculative/disaggregated inference | `tiny-llm`、`paged-serving`、`kvtier` | 先证明现有单机 prefill/decode、KV ownership 和故障回收正确 | 只做一个 L4 设计 + 最小原型，不在缺多 GPU 时声称生产收益 |
+| benchmark/provenance/qualification | 所有技术仓 + `open-infra-ai` | 新正式结果采用 evidence manifest；raw/hash/commit/dirty/失败样本可追溯 | 加入 correctness/performance regression gate |
+| Rust/C++/Python 跨层系统 | `paged-serving` + `tiny-llm` | 双源 ABI、错误映射、buffer/lifetime、cancel/disconnect 后资源回基线 | 增加可观测的 retry/checkpoint 只限离线实验控制面 |
+| Kubernetes/autoscaling/生产运维 | `paged-serving` | `/health`、`/ready`、metrics、容器化、负载与容量曲线 | 仅 Serving 目标触发时增加最小 K8s deployment/HPA 实验 |
+| 异构硬件/ROCm/国产卡 | 当前不设新仓 | schema 保留 hardware/toolchain/dispatch，CPU-only CI 不冒充加速器验证 | 有真实设备或上游 issue 后再做 portability PR |
+
+### 市场对齐后的唯一 P0 链
+
+```text
+TLLM-P0-002 synthetic oracle
+  → TLLM-P0-004 direct paged decode
+  → TLLM-P0-005 Transformer/FFI integration
+  → PSRV-P0-001..004 lifecycle/failure semantics
+  → PSRV-P1-002 real backend gate
+  → PSRV-P1-003/004 telemetry + serving matrix
+  → one upstream issue/PR with reproducible evidence
+```
+
+这条链已经覆盖最新招聘最常见的“kernel + runtime + serving + benchmark + reliability”组合。
+在它完成前，新增 MoE kernel、FP4、完整 K8s、第二个 runtime 或新的练习仓都属于分散注意力。
+
+### 七仓具体调整
+
+| 仓库 | 市场价值 | 现在应做 | 暂时不做 |
+|------|---------|---------|---------|
+| `tiny-llm` | **最高，旗舰数据面** | synthetic oracle → direct paged decode → FFI 集成 → Nsight/长上下文 A/B；补充 exact model/commit/raw evidence | 新模型大而全支持、没有 profiler 证据的量化宣称 |
+| `paged-serving` | **最高，旗舰控制面** | cancellation、bounded backpressure、真实 backend gate、TTFT/TPOT/p99/失败率/显存/queue-depth 容量曲线 | 先搭复杂 K8s 平台、把 scheduler batching 写成 fused GPU batching |
+| `cuflash` | **高，Kernel 深度** | 先修 workspace/stream 生命周期，GPU correctness + sanitizer 后做 4–6 个代表形状的 Nsight 归因 | 为追逐 JD 同时加 MoE、FP4、CuTe；RTX 3060 上冒充新架构收益 |
+| `trifuse` | **中高，框架集成差异化** | 强化 `torch.library`、fake/meta、`torch.export`、dynamic shape 和公平 Triton baseline | 重复 `cuflash` 的全部 CUDA 算子；扩成通用 compiler |
+| `cuda-foundations` | **中，教学与基础证明** | 把 SGEMM 优化阶梯变成可复现 roofline/Nsight 教学案例，保留失败与负优化 | 包装成生产 kernel 库，继续堆无主线的小 kernel |
+| `kvtier` | **中，前沿研究加分** | 固定 SGLang commit，做 host DRAM 回载 correctness 和单卡 IO/KV dtype 矩阵；说明与 disaggregation/KV reuse 的关系 | 宣称自研生产 tiering engine；缺多机条件时给 disaggregation 性能数字 |
+| `open-infra-ai` | **必要但不单独占简历** | 维护 evidence index、manifest、stale/revoked 状态和跨仓 demo 路径 | 把文档数量当项目成果，复制技术仓内容 |
+
+简历首屏只放 `tiny-llm + paged-serving` 作为一个系统项目、`cuflash` 作为一个性能深挖项目；
+`trifuse`、`cuda-foundations`、`kvtier` 放链接或面试追问材料，不再七仓等权展示。
+
 ## STAR 条目模板（W10 产出）
 
 每个项目一条 STAR：S 背景 → T 目标与指标口径 → A 我的实现与取舍 → R 量化结果
