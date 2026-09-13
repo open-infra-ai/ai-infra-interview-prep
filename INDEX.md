@@ -26,6 +26,7 @@
 | [P0_P1_AGENT_BACKLOG.md](P0_P1_AGENT_BACKLOG.md) | 六仓 P0/P1 任务 ID、代码锚点、范围、验收、证据与依赖 | 给 Agent 派发一个具体技术任务时 |
 | [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | direct paged attention、workspace、FFI、并发和性能矩阵设计门禁 | 任何 L3/L4 任务实现前 |
 | [FINAL_EXECUTION_PLAYBOOK.md](FINAL_EXECUTION_PLAYBOOK.md) | 规划完成后的岗位选择、时间决策、任务优先级、Agent 调度与投递门槛 | 决定下一步或高能力 Agent 支持结束前 |
+| [NEXT_AGENT_START_HERE.md](NEXT_AGENT_START_HERE.md) | 新 Agent 的事实重建、历史陷阱、默认任务、权限和最终交接协议 | 开启任何新的编码 Agent 会话时首先发送 |
 
 | 周次 | 主题 | 日期 | 状态 |
 |------|------|------|------|

@@ -13,6 +13,7 @@
 - [P0_P1_AGENT_BACKLOG](P0_P1_AGENT_BACKLOG.md): 六仓可直接委托的 P0/P1 单任务包
 - [L3_L4_DESIGN_REVIEW_PACKAGES](L3_L4_DESIGN_REVIEW_PACKAGES.md): 高复杂度 kernel、并发、FFI、schema 与性能设计门禁
 - [FINAL_EXECUTION_PLAYBOOK](FINAL_EXECUTION_PLAYBOOK.md): 最终优先级、岗位路线与低成本 Agent 延续手册
+- [NEXT_AGENT_START_HERE](NEXT_AGENT_START_HERE.md): 新 Agent 的事实重建、历史陷阱、默认任务和交接入口
 
 ## 规划
 - [TARGET_ROLES](TARGET_ROLES.md): 主/次/可选岗位方向与边界
