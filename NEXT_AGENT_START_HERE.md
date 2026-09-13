@@ -76,6 +76,7 @@ Triton/PyTorch 对照：
   > 当前代码与真实测试/结果
   > P0_P1_AGENT_BACKLOG.md 的当前任务
   > 已批准的 L3_L4_DESIGN_REVIEW_PACKAGES.md 设计
+  > PROJECT_MILESTONES_AND_INTERVIEW_GUIDE.md 的阶段/面试映射
   > FINAL_EXECUTION_PLAYBOOK.md
   > 其他 live 文档
   > dated handoff / archive / 旧聊天摘要

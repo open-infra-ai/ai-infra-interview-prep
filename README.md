@@ -36,6 +36,7 @@
 | 执行 | [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | kernel、并发、FFI 与性能任务的设计评审门禁 |
 | 执行 | [FINAL_EXECUTION_PLAYBOOK.md](FINAL_EXECUTION_PLAYBOOK.md) | 目标岗位选择、最终优先级与低成本 Agent 延续手册 |
 | 执行 | [NEXT_AGENT_START_HERE.md](NEXT_AGENT_START_HERE.md) | 新 Agent 重建当前事实、识别旧 handoff、选择并交接一个任务 |
+| 执行 | [PROJECT_MILESTONES_AND_INTERVIEW_GUIDE.md](PROJECT_MILESTONES_AND_INTERVIEW_GUIDE.md) | 七仓逐阶段改进、验收成果、搭建关系与面试讲法 |
 | 执行 | [weekly/](weekly/) | 逐周计划（状态见下表） |
 | 执行 | [study-plan.md](study-plan.md) | 每周节奏与执行方法 |
 | 追踪 | [progress-tracker.md](progress-tracker.md) | 进度打卡（每周进度 + 每日打卡） |

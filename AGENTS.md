@@ -28,6 +28,7 @@ AI Infra 面试准备的个人执行仓库:12 周转行计划(2026-08-24 ～ 202
 | `L3_L4_DESIGN_REVIEW_PACKAGES.md` | 高复杂度 kernel、并发、FFI、schema 与性能评审包 | L3/L4 任务写生产代码前 |
 | `FINAL_EXECUTION_PLAYBOOK.md` | 最终优先级、岗位路线和低成本 Agent 延续流程 | 决定下一步任务或缩减范围时 |
 | `NEXT_AGENT_START_HERE.md` | 新 Agent 的稳定入口、当前事实和历史信息陷阱 | 新会话开始时第一份读取 |
+| `PROJECT_MILESTONES_AND_INTERVIEW_GUIDE.md` | 七仓逐阶段改进、成果、系统关系与面试叙事 | 规划里程碑或准备项目面试时 |
 | `INTERVIEW_MATRIX.md` | 面试题五要素矩阵 | 准备/复盘面试题时 |
 | `APPLICATION_PLAN.md` | 简历与投递规则 | 投递阶段时 |
 | `resume/` | 公开脱敏简历与本地副本规则 | 改简历时 |

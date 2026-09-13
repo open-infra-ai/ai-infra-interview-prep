@@ -27,6 +27,7 @@
 | [L3_L4_DESIGN_REVIEW_PACKAGES.md](L3_L4_DESIGN_REVIEW_PACKAGES.md) | direct paged attention、workspace、FFI、并发和性能矩阵设计门禁 | 任何 L3/L4 任务实现前 |
 | [FINAL_EXECUTION_PLAYBOOK.md](FINAL_EXECUTION_PLAYBOOK.md) | 规划完成后的岗位选择、时间决策、任务优先级、Agent 调度与投递门槛 | 决定下一步或高能力 Agent 支持结束前 |
 | [NEXT_AGENT_START_HERE.md](NEXT_AGENT_START_HERE.md) | 新 Agent 的事实重建、历史陷阱、默认任务、权限和最终交接协议 | 开启任何新的编码 Agent 会话时首先发送 |
+| [PROJECT_MILESTONES_AND_INTERVIEW_GUIDE.md](PROJECT_MILESTONES_AND_INTERVIEW_GUIDE.md) | 七仓逐阶段任务、成果证据、搭建关系和面试叙事 | 制定项目迭代或准备项目面试 |
 
 | 周次 | 主题 | 日期 | 状态 |
 |------|------|------|------|
