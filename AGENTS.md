@@ -22,6 +22,8 @@ AI Infra 面试准备的个人执行仓库:12 周转行计划(2026-08-24 ～ 202
 | `study-plan.md` | 每周节奏与执行方法 | 安排当周节奏时 |
 | `PROJECT_STRATEGY.md` | 已定项目组合 | 项目相关工作时 |
 | `CLOUD_GPU_PLAYBOOK.md` | 云 GPU 选型、预算、实验闭环与评测矩阵 | 采购/租用云算力时 |
+| `AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md` | 逐步实验、性能分析、面试与职业转型手册 | 指导用户动手实践时 |
+| `AGENT_EXECUTION_GUIDE.md` | 低成本 Agent 任务拆分、证据和验收规范 | 委托技术任务给其他 Agent 时 |
 | `INTERVIEW_MATRIX.md` | 面试题五要素矩阵 | 准备/复盘面试题时 |
 | `APPLICATION_PLAN.md` | 简历与投递规则 | 投递阶段时 |
 | `resume/` | 公开脱敏简历与本地副本规则 | 改简历时 |
@@ -54,6 +56,8 @@ AI Infra 面试准备的个人执行仓库:12 周转行计划(2026-08-24 ～ 202
    `.gitignore` 覆盖的 `.local` 文件。
 6. **诚实原则**:多 GPU / 无实验条件的产出必须标注"理论学习/模拟",禁止伪造实验数据。
 7. **语言**:所有文档用中文;代码标识符保持原文。
+8. **技术任务委托**:跨仓实现、测试、benchmark 或 profiling 任务按
+   `AGENT_EXECUTION_GUIDE.md` 的标准任务单、证据和升级规则执行。
 
 ## 常用命令(仓库根目录)
 

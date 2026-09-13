@@ -19,6 +19,11 @@
 
 ## 执行(每周计划)
 
+| 文档 | 内容 | 何时用 |
+|------|------|--------|
+| [AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md](AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md) | 实验、正确性、benchmark、profiling、面试和转型执行手册 | 每次技术实践前 |
+| [AGENT_EXECUTION_GUIDE.md](AGENT_EXECUTION_GUIDE.md) | 低成本 AI Agent 的任务单、证据、升级和 Prompt 模板 | 委托 AI 执行任务前 |
+
 | 周次 | 主题 | 日期 | 状态 |
 |------|------|------|------|
 | [第 1 周](weekly/week-01.md) | 基线评估、CUDA 模型、环境与性能工具 | 08-24 ~ 08-30 | ⬜ |

@@ -8,6 +8,8 @@
 - [README](README.md): 仓库唯一入口,定位、文档地图、执行入口
 - [INDEX](INDEX.md): 全仓文档四类归档索引
 - [AGENTS](AGENTS.md): AI 代理操作指南(仓库地图/约定/命令)
+- [AI_INFRA_PRACTICE_AND_CAREER_GUIDE](AI_INFRA_PRACTICE_AND_CAREER_GUIDE.md): 逐步实验、性能分析、面试与职业转型手册
+- [AGENT_EXECUTION_GUIDE](AGENT_EXECUTION_GUIDE.md): 低成本 AI Agent 任务拆分、证据与验收规范
 
 ## 规划
 - [TARGET_ROLES](TARGET_ROLES.md): 主/次/可选岗位方向与边界
