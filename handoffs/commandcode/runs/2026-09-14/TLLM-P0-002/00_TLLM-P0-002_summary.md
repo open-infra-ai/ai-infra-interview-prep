@@ -49,35 +49,66 @@ open_questions:
     direct kernel 是否应把 table_length 显式作为参数并只保留一处校验？
   - PagedKVCacheView 的 visible_blocks 目前仅用于校验，gather 长度实际由
     position/num_tokens 推导；设计包 §4.2 需决定 table_length 与 visible_tokens 的关系。
-next_task_id: TLLM-P0-004（前置：TLLM-DPA G0–G8 设计评审）
+next_task_id: TLLM-P0-004 PR-1（设计已批准；先做行为不变的重构，需第二方复核）
 next_exact_command: |
-  # 1) 先评审设计包（当前阻塞点，需要人/reviewer 判定，Agent 不能代签）
-  #    open-infra-ai/tiny-llm#5
-  #    docs/architecture/direct-paged-decode-attention-design.md §12
-  #    待回答 6 个问题：flat 参数 vs POD view、是否抽取共享 tile loop、
-  #    「非法块 id = 零行」能否冻结为稳定契约、是否要求 direct/legacy 逐元素相等、
-  #    是否给连续版补 GQA 整除校验、kernel 收益不得外推为 TTFT/TPOT
-  # 2) 批准后再实现（先 PR #4 合并）
-  cd tiny-llm && git fetch origin && git checkout master && git pull --ff-only
+  # 设计包已批准（tiny-llm#5 §12），8 项决议全部关闭，实现不再被阻塞。
+  # PR-1 是唯一有真实爆炸半径的 PR（改现有热路径 kernel），先做它并请第二方复核。
+  cd tiny-llm && git fetch origin
+  git checkout master && git pull --ff-only            # 先合并 #4（oracle）与 #6（C ABI 校验）
+  git checkout -b tllm-dpa-pr1-tile-loop
+  # 改动范围仅 kernels/attention.cu：把 decode 的 tile loop 抽成 __device__ 模板
+  # + 寻址策略（连续版改用它，行为不变）
   cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTS=ON
   cmake --build build -j"$(nproc)"
-  ./build/tiny_llm_tests --gtest_filter='PagedOracle*'
+  ./build/tiny_llm_tests --gtest_filter='PagedOracle*'   # 必须与重构前逐元素一致
+  ./build/tiny_llm_tests                                 # 全量不得减少通过数
+  ./build/tiny_llm_kernel_bench                          # PR-1 必须附前后对比证明无回归
 ```
 
-## 同日追加：TLLM-P0-004 设计包已提交（待评审）
+## 同日追加：TLLM-P0-004 设计包已批准 + C ABI 边界缺陷已修
 
-- 产物：`open-infra-ai/tiny-llm#5`（分支 `tllm-dpa-design-package`，base `2b15fb2`），
-  文件 `docs/architecture/direct-paged-decode-attention-design.md`。
-- 内容：按 `L3_L4_DESIGN_REVIEW_PACKAGES.md` §3 模板填充，覆盖 G0–G8 与 §4（TLLM-DPA）
-  的全部必答项（block table 语义、layer 偏移归属、table_len 显式传入、
-  `visible_tokens == position + 1` 不变量、支持几何、unsupported 处理），并冻结地址
-  公式、stride、整数宽度、`visible_tokens = 0` 与非法块 id 的零行语义。
-- **状态：DRAFT，未批准。** §12 的 `Decision = pending`，作者不代签；已列出 6 个必须由
-  reviewer 明确回答的问题。按 `NEXT_AGENT_START_HERE.md` §12，实现 Agent 不能是唯一
-  reviewer。
-- 验证：仅文档改动；`docs` 本地 `npm run build`（vitepress 1.6.4）exit 0。
-- 阻塞：TLLM-P0-004 的实现（PR-1 之后的全部 PR）在设计获批前不得开始。
-- 设计依赖 PR #4（TLLM-P0-002）合并后的 master。
+### 1. 设计包（`open-infra-ai/tiny-llm#5`）
+
+- 文件 `docs/architecture/direct-paged-decode-attention-design.md`（base `2b15fb2`）。
+  按 `L3_L4_DESIGN_REVIEW_PACKAGES.md` §3 模板填充，覆盖 G0–G8 与 §4（TLLM-DPA）
+  的全部必答项；已冻结地址公式、stride、整数宽度、`visible_tokens = position + 1`
+  不变量、`visible_tokens = 0`、非法块 id 的零行语义。
+- **Decision: `approved`（2026-09-14）**，8 项待决议题全部关闭（Q1 flat 参数 /
+  Q2 抽取共享 tile loop + 强制性能不回归检查 / Q3 冻结零行语义 / Q4 逐元素严格相等 /
+  Q5 校验位置改到 C ABI 边界 / Q6 收益不得外推 TTFT-TPOT / Q7 scratch 保留 + follow-up /
+  Q8 取消不可达的几何回落）。
+- **独立性缺陷已记录在 §12**：本包由作者编写、也由作者汇总决议，不满足
+  「实现 Agent 不应成为唯一 reviewer」。**PR-1 是唯一有真实爆炸半径的决定**
+  （改现有热路径 kernel），合并前应由第二方复核其 diff 与前后性能数据。
+
+### 2. 本轮新发现：C ABI 模型几何越界读（`open-infra-ai/tiny-llm#6`）
+
+- 现象：`num_heads` 不被 `num_kv_heads` 整除时，attention kernel 的
+  `kv_head = q_head / (num_heads / num_kv_heads)` 越界，最后一个 token 的 K/V 读
+  越过缓冲末尾。最小复现 + Compute Sanitizer 证实（`Hq=14/Hkv=3`，13 errors，
+  `cudaDeviceSynchronize -> unknown error`，CUDA 上下文被毒化）。
+- 范围：`validateModelConfig` 早已实现该校验，但全仓只有 `InferenceEngine::Load`
+  调用；C ABI 路径 `tinyllm_load`（分页/策略 1 与 paged-serving 走的那条）不调用，
+  且 `extractModelConfig` 对异常元数据是补默认值而非报错。
+- 修复：在 `tinyllm_load` 的 `extractModelConfig()` 之后、`loadGGUF()` 之前调用
+  `Validator::validateModelConfig`；一处覆盖整条 C ABI 路径，对合法模型零行为变化。
+- 新增 `tests/test_validator.cpp`（纯 host，无 GPU 也运行；`Validator` 此前零覆盖）。
+  变异检验：移除校验调用后边界测试失败。
+- 该修复与 TLLM-P0-004 解耦，可独立合并。
+
+### 3. 当前 PR 依赖
+
+| PR | 内容 | 阻塞关系 |
+|----|------|----------|
+| tiny-llm#4 | TLLM-P0-002 oracle | PR-2/PR-3 的正确性前置 |
+| tiny-llm#5 | TLLM-P0-004 设计包（已批准） | 无 |
+| tiny-llm#6 | C ABI 几何校验 | 无，可独立合并 |
+| ai-infra-interview-prep#9 | 本交接记录 | 无 |
+
+### 4. 下一步
+
+实现按设计包 §10 的 PR-1…PR-6 推进，**PR-1 必须先做且需要第二方复核**。
+PR-1（行为不变的重构）通过后，PR-2 才有正确性前置。
 
 ## 复现与验证细节
 
