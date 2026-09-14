@@ -151,20 +151,97 @@ next_exact_command: |
 | tiny-llm#6 | C ABI 几何校验 | 无，可独立合并 |
 | tiny-llm#7 | TLLM-P0-004 PR-2 direct kernel（含共享归约抽取） | 依赖 #4 |
 | tiny-llm#9 | TLLM-P0-004 PR-3 dispatch + 开关 | 依赖 #7 |
+| tiny-llm#10 | TLLM-P0-004 PR-5 三路 kernel benchmark（**结论：不改默认值**） | 依赖 #9 |
 | ai-infra-interview-prep#9 | 本交接记录 | 无 |
 
-合并顺序：**#4 → #7 → #9**（#6 可任意时刻独立合并）。
+合并顺序：**#4 → #7 → #9 → #10**（#6 可任意时刻独立合并）。
 
 ### 6. 下一步
 
-**PR-5：三路 kernel benchmark（legacy gather / contiguous / direct）**，绑 #7/#9 的
-correctness commit，产出 raw samples + 收敛判定 + provenance；**通过后把
-`TLLM_PAGED_ATTENTION` 默认值由 `legacy` 改为 `auto`**。在此之前不得出现任何
-direct 的性能声明。
+**PR-5 已完成并给出否定结论（见 §7），`TLLM_PAGED_ATTENTION` 默认值保持 `legacy`。**
 
-benchmark 时的注意事项（本项目已踩过）：GPU 空闲时 SM 时钟停在 900/3090 MHz，
-必须先做持续负载预热；编译要用 `-arch=native`；`attention_decode` 的 host-int 重载
-每次调用带一次 4 字节 H2D memcpy，比较时用 device-int 重载。详见设计包 §10.1。
+下一个有价值的任务不是继续推 direct，而是消除它和 legacy 共同的真实瓶颈：
+`kernels/attention.cu::decode_online_softmax` 第 4 步（每个线程固定一个 `d`、遍历整个
+tile）对 V 的访问——ncu 显示两条 attention kernel 的 SM throughput 都 < 1%、
+long-scoreboard stall 40%–46%。修掉它之后再重测三路，direct 的取舍才有意义。
+
+在此之前若要收口能力边界文档（设计包 §10 的 PR-6），只能引用
+`docs/performance/results/2026-09-14-rtx5070ti-dpa.md` 的已归档证据。
+
+### 7. PR-5（三路 kernel benchmark）已提交 —— 结论：不改默认值（2026-09-14）
+
+```yaml
+task_id: TLLM-P0-004 PR-5
+status: complete            # 交付完成；但「改默认值」的门禁未通过
+repository: open-infra-ai/tiny-llm
+base_branch: tllm-dpa-pr3-dispatch   # PR #9 head（堆叠）
+base_commit: ce93564
+current_branch: tllm-dpa-pr5-benchmark
+current_commit: 4fc897e
+dirty: false
+complexity: L3
+change: 仅 src/kernel_bench.cpp + docs/performance/**；未改 kernel / FFI / transformer.cpp
+changed_files:
+  - src/kernel_bench.cpp                              # +601：--dpa-bench 三路 harness
+  - docs/performance/index.md
+  - docs/performance/benchmark-methodology.md         # §8 修正 ncu 可用性 + --dpa-bench
+  - docs/performance/results/2026-09-14-rtx5070ti-dpa.md
+  - docs/performance/results/data/2026-09-14-rtx5070ti-dpa.{raw.jsonl,summary.json}
+decisions:
+  - 默认值**不改**（仍 legacy）。设计包 §10/§11 规定只在 PR-5 通过后改 auto；实测未通过，
+    因此 src/transformer.cpp 未改，无生产行为变化。
+  - 采样用「每样本 100 次调用」（而非 §9 字面值 implied 的 10 次）：reps=200 + 每样本 10 次
+    时 32/32 shape 全部 CV>10%；收敛阈值未改，反例保留在报告 §1.1。
+  - 收敛门禁只约束三条对比路径（legacy/contiguous/direct）；gather_k/gather_v 是 §9 规定的
+    辅助诊断，单独报告 CV 但不参与 shape 级判定。
+verified:
+  - legacy vs direct 逐位相等 32/32（max|diff| = 0），且先于计时
+  - 全量 tiny_llm_tests：208 passed / 11 skipped（skip 均为需真实 GGUF 的既有用例）
+  - compute-sanitizer --tool memcheck：paged 三 suite 0 error；新 harness 在 S=8/512/2048 亦 0 error
+  - clang-format 18.1.8（CI 同版本）全仓 --dry-run --Werror：0 violation
+  - docs npm run build：exit 0
+  - 构建 -DCMAKE_CUDA_ARCHITECTURES=native；cuobjdump --list-elf 实测 cubin = sm_120
+  - CI workflow_dispatch 已触发：run 34834253209
+failed: []
+not_run:
+  - CUDA Graph 下的三路复测（报告已明确不外推小窗口收益）
+  - nsys timeline；prefill / batched decode / 非本机硬件
+artifacts:
+  - PR open-infra-ai/tiny-llm#10
+  - docs/performance/results/data/2026-09-14-rtx5070ti-dpa.raw.jsonl（5025 行，dirty_files=0）
+  - .ncu-rep（按 TEMPLATE 要求放在仓库外）
+open_questions:
+  - decode_online_softmax 第 4 步的 V 访问是两条路径共同瓶颈；先修它再评估 direct
+  - 是否保留 direct 路径与冗余 K/V scratch（设计包 §5 follow-up）
+next_exact_command: |
+  cd tiny-llm && git fetch origin
+  git checkout tllm-dpa-pr5-benchmark && git log --oneline -3 && gh pr view 10
+  # 复现三路基准（约 2 分钟；先确认 GPU 空闲）
+  ./build/tiny_llm_kernel_bench --dpa-bench --warmup 20 --reps 1000 --batch 100 \
+    --repeats 3 --clock-warmup 4 --seed 20260914 --out /tmp/dpa.raw.jsonl
+```
+
+**结果摘要**（RTX 5070 Ti / sm_120；clean commit `b6f6138`；被测 kernel `ce93564`）：
+
+| visible (bs=16) | legacy (ms) | direct (ms) | leg/dir |
+|---|---|---|---|
+| 8 | 0.0170 | 0.0068 | **2.504** |
+| 128 | 0.0189 | 0.0144 | 1.316 |
+| 512 | 0.0436 | 0.0450 | **0.969** |
+| 1024 | 0.0817 | 0.0881 | **0.927** |
+| 2048 | 0.1510 | 0.1734 | **0.871** |
+
+- 3 个 repeat 方向一致；交叉点在 **S≈129–512**。小窗口的正收益主要来自「3 次 launch → 1 次」。
+- `legacy ≈ gather_k + gather_v + contiguous`（差 3%–9%）；gather 在 S=2048 只占 legacy 的
+  8.3%，**省掉它不可能给出两位数百分比收益**。
+- ncu：direct 316 µs / contiguous 280 µs（分页寻址在归约内层循环里多约 13%），gather 仅
+  4.42 µs；两条 attention 的 SM throughput 均 < 1%、long-scoreboard stall 40%–46%
+  ⇒ 真正的瓶颈是第 4 步的 V 访问，既不是 gather，也不是 DRAM 带宽。
+- **本项目自己记录的测量陷阱再次生效**：本机 `build/CMakeCache.txt` 里缓存着
+  `CMAKE_CUDA_ARCHITECTURES=75`，直接沿用会编到 sm_75 而设备是 sm_120（§10.1 陷阱 2）。
+  已用 `-DCMAKE_CUDA_ARCHITECTURES=native` 重建并以 `cuobjdump --list-elf` 验证 cubin = sm_120。
+- ncu 在本机**已可用**（2026-08-23 的 `ERR_NVGPUCTRPERM` 不再复现）；但
+  `dram__bytes_read.sum` 返回 n/a，需改用 `dram__bytes.sum`。
 
 ## 复现与验证细节
 
