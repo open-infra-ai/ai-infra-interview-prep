@@ -96,10 +96,10 @@ next_exact_command: |
   变异检验：移除校验调用后边界测试失败。
 - 该修复与 TLLM-P0-004 解耦，可独立合并。
 
-### 3. TLLM-P0-004 实现：PR-1 被门禁否决，PR-2 已提交
+### 3. TLLM-P0-004 实现：门禁先否决，后按 issue #8 翻转
 
-- **PR-1（抽取共享 decode tile loop）未提交**——被它自己的门禁否决。设计包 §10 预先
-  写明"出现可测回归则退回复制实现"，而抽取实测给生产 kernel `attention_decode` 带来
+- **PR-1（抽取共享 decode tile loop）先被它自己的门禁否决**。设计包 §10 预先写明
+  "出现可测回归则退回复制实现"，而抽取实测给生产 kernel `attention_decode` 带来
   **+1.4~2.3% 的可复现回归**（两轮独立重复分别 7/8 与 6/8 几何为正，D=128/S=512 达
   +4.9%）。完整证据与三次测量方法修正见设计包 §10.1。
   - 测量陷阱（后人勿重蹈）：GPU 空闲时 SM 时钟停在 900/3090 MHz，小 kernel 拉不动
@@ -108,15 +108,23 @@ next_exact_command: |
   - 可信方法：时钟预热 + `-arch=native` + device-int 重载 + 大 S + 顺序平衡交替 +
     **新旧 kernel 编入同一进程交替调用**（消除跨二进制代码布局混淆）。
   - 两种规避写法（策略按值/按引用、无效行返回零行以消分支）均未改变结论。
-- **PR-2 已提交**：`open-infra-ai/tiny-llm#7`（base = #4，堆叠）。
-  `kernels/attention.{cuh,cu}::attention_decode_paged` + `tests/test_paged_direct.cpp`。
+- **随后按 issue #8 翻转该取舍：接受回归，改回共享循环**（设计包 §10.2）。理由是
+  复制方案唯一的风险（两份实现漂移）已由"逐位相同"门禁自动覆盖——**安全来自门禁，
+  不来自副本数量**；+1.4~2.3% 落在单 kernel，端到端约 0.1~0.3%，不划算。
+  最终形态：`decode_online_softmax` 模板 + `ContiguousRows` / `PagedRows` 取址策略，
+  无效行返回共享内存零行（循环内无分支）。
+- **PR-2 已提交**：`open-infra-ai/tiny-llm#7`（base = #4，堆叠），含两个 commit。
   - 主门禁：direct 与 legacy 在同一 pool/块表/输入下输出**逐位相同**（12 组几何 × 3 seed），
-    另对照 TLLM-P0-002 的独立 oracle；sanitizer 0 error；变异检验 2/2 捕获。
+    另对照 TLLM-P0-002 的独立 oracle；sanitizer 0 error。
+  - 连续路径数值**逐位不变**（10 组几何的 fp16 位模式指纹，抽取前后一致）。
+  - **变异检验三项**：① 块内偏移写错 → 逐位门禁捕获；② 去掉 `table_len` 防护 → 短块表
+    用例捕获；③ **在共享循环里丢掉 online rescale（两条路径同等出错）→ 逐位门禁通过、
+    独立 oracle 捕获**。第三项证明"共享归约必须配独立参考"，否则该类错误整体漏过。
   - 边界：只加 kernel 与 kernel 级测试，**未**接入 Transformer dispatch（PR-3），
     生产 decode 路径行为不变；不产生性能数字。
   - **CI**：`ci.yml` 的 `pull_request.branches` 匹配的是 base 分支，堆叠 PR 不会自动
-    触发 CI。已用 `workflow_dispatch` 在分支 head 手动跑通（run 34828281225，
-    Format + Build and Test 均 success）。#4 合并后 base 会自动重定向到 master。
+    触发 CI。已用 `workflow_dispatch` 在分支 head 手动跑（翻转前的 bb0f124 与翻转后的
+    commit 各一次）。#4 合并后 base 会自动重定向到 master。
 
 ### 4. 当前 PR 依赖
 
