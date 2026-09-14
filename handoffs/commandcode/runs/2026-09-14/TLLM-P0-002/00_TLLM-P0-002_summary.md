@@ -49,7 +49,7 @@ open_questions:
     direct kernel 是否应把 table_length 显式作为参数并只保留一处校验？
   - PagedKVCacheView 的 visible_blocks 目前仅用于校验，gather 长度实际由
     position/num_tokens 推导；设计包 §4.2 需决定 table_length 与 visible_tokens 的关系。
-next_task_id: TLLM-P0-004 PR-3（Transformer dispatch + TLLM_PAGED_ATTENTION 开关）
+next_task_id: TLLM-P0-004 PR-5（三路 kernel benchmark；通过后把 TLLM_PAGED_ATTENTION 默认值改为 auto）
 next_exact_command: |
   # 设计包已批准（tiny-llm#5 §12），8 项决议全部关闭，实现不再被阻塞。
   # PR-1 是唯一有真实爆炸半径的 PR（改现有热路径 kernel），先做它并请第二方复核。
@@ -126,21 +126,45 @@ next_exact_command: |
     触发 CI。已用 `workflow_dispatch` 在分支 head 手动跑（翻转前的 bb0f124 与翻转后的
     commit 各一次）。#4 合并后 base 会自动重定向到 master。
 
-### 4. 当前 PR 依赖
+### 4. PR-3（runtime dispatch）已提交
+
+- **`open-infra-ai/tiny-llm#9`**（base = #7，堆叠）。`attentionPaged` 的 decode 分支按
+  `TLLM_PAGED_ATTENTION` 分发：`direct` 时直接调用 `attention_decode_paged` 并**跳过
+  gather**；`legacy` 保留原路径；`auto` 当前等价于 `direct`。
+  - **默认（未设置）= legacy ⇒ 不改变生产默认行为**（设计包 §11）。PR-5 通过后才改 `auto`。
+  - 非法取值显式报错，不静默回退；显式 legacy 打一次 `TLLM_WARN`（便于结果包区分路径）。
+  - 开关**不做进程级缓存**：每次调用解析（约 20 ns、无堆分配），使 `setenv` 在测试中
+    即时生效 → 不需要为测试暴露 reset seam。只影响 strategy 1 的 decode。
+- 测试手法值得复用：把共享 `k_scratch`/`v_scratch` 预填哨兵值，跑一次 decode 后检查
+  scratch 是否被写——**直接观测走了哪条路径**，比比对输出更不容易自欺。
+- 变异检验 3 项全被捕获：忽略开关一律 direct（3 项失败）；dispatch 处 `table_len`
+  传 0（层级逐位比对失败，max|diff| 0.011）；非法取值静默回退（对应用例失败）。
+- 全量 208 passed / 11 skipped；sanitizer 0 error；clang-format 0 violation；
+  CI 手动 dispatch 通过。
+
+### 5. 当前 PR 依赖
 
 | PR | 内容 | 阻塞关系 |
 |----|------|----------|
 | tiny-llm#4 | TLLM-P0-002 oracle | #7 的 base |
-| tiny-llm#5 | TLLM-P0-004 设计包（已批准，§10.1 记录 PR-1 否决） | 无 |
+| tiny-llm#5 | TLLM-P0-004 设计包（已批准；§10.1 门禁否决、§10.2 翻转、§11 开关语义） | 无 |
 | tiny-llm#6 | C ABI 几何校验 | 无，可独立合并 |
-| tiny-llm#7 | TLLM-P0-004 PR-2 direct kernel | 依赖 #4；合并顺序 #4 → #7 |
+| tiny-llm#7 | TLLM-P0-004 PR-2 direct kernel（含共享归约抽取） | 依赖 #4 |
+| tiny-llm#9 | TLLM-P0-004 PR-3 dispatch + 开关 | 依赖 #7 |
 | ai-infra-interview-prep#9 | 本交接记录 | 无 |
 
-### 5. 下一步
+合并顺序：**#4 → #7 → #9**（#6 可任意时刻独立合并）。
 
-PR-3（`TransformerLayer::attentionPaged` decode 分支切 direct + `TLLM_PAGED_ATTENTION`
-开关三态与降级日志）。设计包 §7/§11 已冻结其契约；PR-3 之后才是 PR-5 的三路 benchmark
-（legacy / contiguous / direct），届时才允许出现性能数字。
+### 6. 下一步
+
+**PR-5：三路 kernel benchmark（legacy gather / contiguous / direct）**，绑 #7/#9 的
+correctness commit，产出 raw samples + 收敛判定 + provenance；**通过后把
+`TLLM_PAGED_ATTENTION` 默认值由 `legacy` 改为 `auto`**。在此之前不得出现任何
+direct 的性能声明。
+
+benchmark 时的注意事项（本项目已踩过）：GPU 空闲时 SM 时钟停在 900/3090 MHz，
+必须先做持续负载预热；编译要用 `-arch=native`；`attention_decode` 的 host-int 重载
+每次调用带一次 4 字节 H2D memcpy，比较时用 device-int 重载。详见设计包 §10.1。
 
 ## 复现与验证细节
 
