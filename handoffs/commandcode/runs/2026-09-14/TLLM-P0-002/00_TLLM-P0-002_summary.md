@@ -49,7 +49,7 @@ open_questions:
     direct kernel 是否应把 table_length 显式作为参数并只保留一处校验？
   - PagedKVCacheView 的 visible_blocks 目前仅用于校验，gather 长度实际由
     position/num_tokens 推导；设计包 §4.2 需决定 table_length 与 visible_tokens 的关系。
-next_task_id: TLLM-P0-004 PR-1（设计已批准；先做行为不变的重构，需第二方复核）
+next_task_id: TLLM-P0-004 PR-3（Transformer dispatch + TLLM_PAGED_ATTENTION 开关）
 next_exact_command: |
   # 设计包已批准（tiny-llm#5 §12），8 项决议全部关闭，实现不再被阻塞。
   # PR-1 是唯一有真实爆炸半径的 PR（改现有热路径 kernel），先做它并请第二方复核。
@@ -96,19 +96,43 @@ next_exact_command: |
   变异检验：移除校验调用后边界测试失败。
 - 该修复与 TLLM-P0-004 解耦，可独立合并。
 
-### 3. 当前 PR 依赖
+### 3. TLLM-P0-004 实现：PR-1 被门禁否决，PR-2 已提交
+
+- **PR-1（抽取共享 decode tile loop）未提交**——被它自己的门禁否决。设计包 §10 预先
+  写明"出现可测回归则退回复制实现"，而抽取实测给生产 kernel `attention_decode` 带来
+  **+1.4~2.3% 的可复现回归**（两轮独立重复分别 7/8 与 6/8 几何为正，D=128/S=512 达
+  +4.9%）。完整证据与三次测量方法修正见设计包 §10.1。
+  - 测量陷阱（后人勿重蹈）：GPU 空闲时 SM 时钟停在 900/3090 MHz，小 kernel 拉不动
+    boost，逐次差异可达 50%；scratch 程序误编到 sm_75 而非生产的 sm_120；现成 harness
+    的 host-int 重载每次调用带一次 4 字节 H2D memcpy。
+  - 可信方法：时钟预热 + `-arch=native` + device-int 重载 + 大 S + 顺序平衡交替 +
+    **新旧 kernel 编入同一进程交替调用**（消除跨二进制代码布局混淆）。
+  - 两种规避写法（策略按值/按引用、无效行返回零行以消分支）均未改变结论。
+- **PR-2 已提交**：`open-infra-ai/tiny-llm#7`（base = #4，堆叠）。
+  `kernels/attention.{cuh,cu}::attention_decode_paged` + `tests/test_paged_direct.cpp`。
+  - 主门禁：direct 与 legacy 在同一 pool/块表/输入下输出**逐位相同**（12 组几何 × 3 seed），
+    另对照 TLLM-P0-002 的独立 oracle；sanitizer 0 error；变异检验 2/2 捕获。
+  - 边界：只加 kernel 与 kernel 级测试，**未**接入 Transformer dispatch（PR-3），
+    生产 decode 路径行为不变；不产生性能数字。
+  - **CI**：`ci.yml` 的 `pull_request.branches` 匹配的是 base 分支，堆叠 PR 不会自动
+    触发 CI。已用 `workflow_dispatch` 在分支 head 手动跑通（run 34828281225，
+    Format + Build and Test 均 success）。#4 合并后 base 会自动重定向到 master。
+
+### 4. 当前 PR 依赖
 
 | PR | 内容 | 阻塞关系 |
 |----|------|----------|
-| tiny-llm#4 | TLLM-P0-002 oracle | PR-2/PR-3 的正确性前置 |
-| tiny-llm#5 | TLLM-P0-004 设计包（已批准） | 无 |
+| tiny-llm#4 | TLLM-P0-002 oracle | #7 的 base |
+| tiny-llm#5 | TLLM-P0-004 设计包（已批准，§10.1 记录 PR-1 否决） | 无 |
 | tiny-llm#6 | C ABI 几何校验 | 无，可独立合并 |
+| tiny-llm#7 | TLLM-P0-004 PR-2 direct kernel | 依赖 #4；合并顺序 #4 → #7 |
 | ai-infra-interview-prep#9 | 本交接记录 | 无 |
 
-### 4. 下一步
+### 5. 下一步
 
-实现按设计包 §10 的 PR-1…PR-6 推进，**PR-1 必须先做且需要第二方复核**。
-PR-1（行为不变的重构）通过后，PR-2 才有正确性前置。
+PR-3（`TransformerLayer::attentionPaged` decode 分支切 direct + `TLLM_PAGED_ATTENTION`
+开关三态与降级日志）。设计包 §7/§11 已冻结其契约；PR-3 之后才是 PR-5 的三路 benchmark
+（legacy / contiguous / direct），届时才允许出现性能数字。
 
 ## 复现与验证细节
 
