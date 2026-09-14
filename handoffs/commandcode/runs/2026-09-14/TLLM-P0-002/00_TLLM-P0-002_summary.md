@@ -51,11 +51,33 @@ open_questions:
     position/num_tokens 推导；设计包 §4.2 需决定 table_length 与 visible_tokens 的关系。
 next_task_id: TLLM-P0-004（前置：TLLM-DPA G0–G8 设计评审）
 next_exact_command: |
+  # 1) 先评审设计包（当前阻塞点，需要人/reviewer 判定，Agent 不能代签）
+  #    open-infra-ai/tiny-llm#5
+  #    docs/architecture/direct-paged-decode-attention-design.md §12
+  #    待回答 6 个问题：flat 参数 vs POD view、是否抽取共享 tile loop、
+  #    「非法块 id = 零行」能否冻结为稳定契约、是否要求 direct/legacy 逐元素相等、
+  #    是否给连续版补 GQA 整除校验、kernel 收益不得外推为 TTFT/TPOT
+  # 2) 批准后再实现（先 PR #4 合并）
   cd tiny-llm && git fetch origin && git checkout master && git pull --ff-only
   cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTS=ON
   cmake --build build -j"$(nproc)"
   ./build/tiny_llm_tests --gtest_filter='PagedOracle*'
 ```
+
+## 同日追加：TLLM-P0-004 设计包已提交（待评审）
+
+- 产物：`open-infra-ai/tiny-llm#5`（分支 `tllm-dpa-design-package`，base `2b15fb2`），
+  文件 `docs/architecture/direct-paged-decode-attention-design.md`。
+- 内容：按 `L3_L4_DESIGN_REVIEW_PACKAGES.md` §3 模板填充，覆盖 G0–G8 与 §4（TLLM-DPA）
+  的全部必答项（block table 语义、layer 偏移归属、table_len 显式传入、
+  `visible_tokens == position + 1` 不变量、支持几何、unsupported 处理），并冻结地址
+  公式、stride、整数宽度、`visible_tokens = 0` 与非法块 id 的零行语义。
+- **状态：DRAFT，未批准。** §12 的 `Decision = pending`，作者不代签；已列出 6 个必须由
+  reviewer 明确回答的问题。按 `NEXT_AGENT_START_HERE.md` §12，实现 Agent 不能是唯一
+  reviewer。
+- 验证：仅文档改动；`docs` 本地 `npm run build`（vitepress 1.6.4）exit 0。
+- 阻塞：TLLM-P0-004 的实现（PR-1 之后的全部 PR）在设计获批前不得开始。
+- 设计依赖 PR #4（TLLM-P0-002）合并后的 master。
 
 ## 复现与验证细节
 
