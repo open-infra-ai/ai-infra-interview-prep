@@ -243,7 +243,75 @@ next_exact_command: |
 - ncu 在本机**已可用**（2026-08-23 的 `ERR_NVGPUCTRPERM` 不再复现）；但
   `dram__bytes_read.sum` 返回 n/a，需改用 `dram__bytes.sum`。
 
-## 复现与验证细节
+### 8. TLLM-ATTN-SPLITKV（split-KV decode attention）—— PR-A/B/C 已提交（2026-09-14/15）
+
+```yaml
+task_id: TLLM-ATTN-SPLITKV
+status: partial      # PR-A/B/C 完成且 CI 绿；PR-D（benchmark）未做；另发现一个更该优先的既有隐患
+repository: open-infra-ai/tiny-llm
+base_branch: tllm-dpa-pr5-benchmark   # 堆叠链 #4 → #7 → #9 → #10 → #11 → #12 → #13
+current_branch: tllm-attn-splitkv-wiring
+current_commit: 743119b
+dirty: false
+complexity: L4
+artifacts:
+  - "PR #11 设计记录（docs/architecture/decode-attention-splitkv-design.md），CI 绿"
+  - "PR #12  kernel（decode_online_softmax_range + partial/combine + 两个 _splitkv 入口），CI 绿"
+  - "PR #13  接线（LayerWorkspace.attn_partial + TLLM_ATTN_SPLITKV + transformer 路由），CI 绿"
+verified:
+  - "逐位锚点：num_splits == 1 与单遍路径逐位相同（连续 + 分页）"
+  - "num_splits ∈ {2,4,8,16} 落在独立 oracle 的 2e-3 容差内；split 连续 vs 分页逐位相同"
+  - "CUDA Graph：捕获后可见长度 1→96 增长并 replay，与 eager 逐位相同"
+  - "全量 225 passed / 11 skipped；sanitizer 0 error；clang-format 18.1.8 clean"
+  - "CI：PR #11/#12/#13 各一次 workflow_dispatch 全绿（CUDA 11.8）"
+mutation_testing:
+  - "combine 丢 l_i 权重 → 6 项 oracle 用例抓到，而 num_splits=1 锚点照常通过（说明必须有独立 oracle）"
+  - "段范围 off-by-one → 7 项抓到，含两条锚点"
+  - "去掉 m==M→1.0f → 未抓到且本就不该抓到：探针证实 __expf(0)==1.0f 精确成立"
+  - "丢掉在线 rescale → **初版矩阵漏掉**（随机数据+短序列时全局 max 总在第一个 tile，old_rescale 恒为 1）；"
+  - "  已补 LateMaxForcesOnlineRescaleToMatter（确定性构造后置 max）后被抓到"
+not_run:
+  - "PR-D：三路 benchmark + num_splits 扫描 + 结果包（本任务尚**未产生任何性能数字**）"
+  - "CUDA Graph 下的生产级复测"
+next_task_id: 优先修 §9 的既有隐患，其次 PR-D
+next_exact_command: |
+  cd tiny-llm && git fetch origin
+  git log --oneline -1 tllm-attn-splitkv-wiring   # 743119b
+  # 复现 PR-C 的开关语义
+  TLLM_ATTN_SPLITKV=4 ./build/tiny_llm_tests --gtest_filter='PagedDispatchTest.SplitKv*'
+```
+
+设计要点（详见 PR #11）：decode 的并行度原本只有 `num_q_heads` 一个轴，`visible=2048`
+时 `grid=(14,1,1)×128`、**occupancy 8.33%**，且无资源饱和（DRAM 0.44%、SM 0.72%、
+L2 0.96%）。修法是加 block：`grid=(Hq, num_splits)` 切可见窗口 + combine kernel。
+段范围由 device 端 `visible_tokens` 现场派生、`num_splits` 是 host 参数，因此
+**grid 固定、CUDA Graph 仍可捕获**。
+
+**注意：PR-5 收尾时"修归约第 4 步的 V 访问"的说法已被 profiler 数据推翻**——那是
+"只有 4 个 warp"的症状，不是原因。
+
+### 9. ⚠️ 一个比 split-KV 更该优先的既有隐患（未修，仅定位）
+
+开发 PR-C 时，只要那次额外 device 分配存在，全量测试就**确定性失败**（16 项，首个是
+`attention_decode_kernel` 的非法读）。证据链：
+
+1. 读地址在 **KV pool 末尾之后 4 字节**（`pool=0x717c72800`、`fault=pool+32772`，而
+   slot 只有 32768 字节）⇒ kernel 用了一个**远大于本步实际（`visible=21`）的可见长度**（约 64）；
+2. 发生在**既有的连续路径**（`tests/test_paged_oracle.cpp:673` → `forward` → `attention`），
+   **与 split-KV 无关**；
+3. **决定性对照**：在 **PR-B 状态**（完全没有 split-KV 代码）下，只在
+   `LayerWorkspace::allocate` 里注入一次独立的 8 KiB `cudaMalloc`/`cudaFree`，复现**完全相同**的失败；
+4. **对构建敏感**：失败二进制连续 4/4 失败；revert + 重新应用后重建，同源码连续 6/6 通过。
+   CI（CUDA 11.8）本次也是绿的。
+
+**为什么重要**：split-KV 会增加一次 device 分配，从而扰动同一布局。也就是说这个隐患
+不修，split-KV 就没有可信基础（本机绿 ≠ 可信）。它属于本项目已经修过两次的同一类
+问题（`KVCacheManager::append_pos_` 未初始化、FFI `decode_len`），建议按同样的方式
+单独立一个 bug 任务：最小复现 + Compute Sanitizer + 根因修复，**不要靠调整分配大小绕过**。
+
+**现状**：本机与 CI 现在都是绿的（所以没有阻塞交付），但**隐患仍在**，只是当前构建
+布局下不显形。
+
 
 - 环境（当前机器，不是历史上的 RTX 3060 Laptop）：RTX 5070 Ti 16GB（sm_120）、
   CUDA 13.3.73 / driver 615.65.06、GCC 13.3、CMake 3.28.3。
