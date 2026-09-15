@@ -312,6 +312,75 @@ L2 0.96%）。修法是加 block：`grid=(Hq, num_splits)` 切可见窗口 + com
 **现状**：本机与 CI 现在都是绿的（所以没有阻塞交付），但**隐患仍在**，只是当前构建
 布局下不显形。
 
+### 10. §9 隐患已根除 + PR-D 已完成（2026-09-15）
+
+```yaml
+task_id: TLLM-ATTN-SPLITKV PR-D + §9 隐患修复
+status: complete            # 隐患根除并验证；PR-D 交付完成（结论：不改默认值）
+repository: open-infra-ai/tiny-llm
+current_branch: tllm-attn-splitkv-bench
+current_commit: c75b5ed     # 2eb97b2 harness + c75b5ed 结果归档
+dirty: false
+complexity: L4
+artifacts:
+  - "PR #14  tllm-attn-splitkv-bench（base = #13），benchmark harness + 归档结果"
+  - "PR #4   追加 commit e2409a5：oracle 测试 decode_len/rope_pos 的 copyFromHost count 0→1"
+  - "tiny-llm docs/performance/results/2026-09-15-rtx5070ti-splitkv.md + data/*.{raw.jsonl,summary.json}"
+```
+
+**§9 隐患根因（已修，非 kernel bug）**：`tests/test_paged_oracle.cpp:666-667` 的
+`d_decode_len.copyFromHost(&vis, 0)` / `d_pos.copyFromHost(&pos, 0)`——第二参数是
+**元素个数**，`0` = no-op，`decode_len` 与 `rope_pos` 从未上卡。`attention_decode`
+盲信 device 端垃圾值：值小时两条路径错得一致、门禁照过；值大（回收块残留）时按错误
+可见长度读到 KV slot 外 → 非法读毒化 context → 16 项连带失败。注入 8KiB cudaMalloc
+改变 caching allocator 布局即确定性复现，全部对上。initcheck 直接抓到
+`attention_decode_kernel` 在 `test_paged_oracle.cpp:673` 的 4 字节未初始化 global
+读（同地址 1251 次）。**附带发现：`d_pos` 恒 0 意味着 decode RoPE position 从未被真正
+测试**。修复落在 PR #4 分支（`e2409a5`），initcheck 归零、PagedOracle* 8/8、全量
+225 passed。此前的「生产 kernel 隐患」定性被推翻——是测试代码 bug，但历史记录保留。
+
+**PR-D benchmark 结果**（schema `tllm-dpa-kernel-bench-v2`；`--num-splits 1,2,4,8,16`）：
+
+- 等价性前置门禁：v1 三路逐位 32/32；`num_splits=1` 逐位锚点 96/96；
+  `num_splits>1` 容差 384/384（max_abs_diff 全矩阵 6.1e-05 ≪ 2e-3）。
+- **交叉点 ≈ visible 256（ns≥2）**：`visible=2048,bs=16` 时 `direct_splitkv@16`
+  0.0287 ms vs 单遍 direct 0.1732 ms = **6.03×**；`legacy_splitkv@16` 0.0365 ms。
+  direct 首次以 kernel 口径明确快过 legacy 全路径。
+- **小窗口回退**：`visible ≤ 129` 最多 ~1.9×（combine 固定 ~4–5 µs 开销；
+  `num_splits=1` 恰好量化出它：`S=8` 慢 ~1.75×，`S=2048` 仅 +3%）。
+- **ncu（visible=2048）**：occupancy 8.35% → 13.08%（≈ 14→112 block / 70 SM，
+  **未饱和**）；SM throughput 0.86% → 6.04%；DRAM bytes 不变；combine 5.1 µs。
+  机制 = 块间并行掩盖 latency，不是 occupancy 打满。
+- **决策：`TLLM_ATTN_SPLITKV` 默认保持关闭**。小窗口回归真实，且 host 拿不到
+  device 端可见长度做按长度自适应（会引入同步）；CUDA Graph 下亦不可切换。
+  长上下文场景由调用方显式设 `TLLM_ATTN_SPLITKV=8..16`。
+
+```yaml
+verified:
+  - "全量 tiny_llm_tests 225 passed / 0 failed"
+  - "compute-sanitizer initcheck：PagedOracle* 与 bench 新路径 0 errors"
+  - "clang-format clean（本机 v19；CI 用 18.1.8，以 CI 为准）"
+  - "benchmark 在 clean commit 2eb97b2 上运行（provenance dirty_files=0）"
+failed: []
+not_run:
+  - "num_splits=32、其它 block_size、多 KV head 几何、并发 stream 干扰"
+  - "CUDA Graph 下的生产级复测、serving 级延迟（本任务不产生 TTFT/TPOT）"
+  - "32 shape 仅 4 个收敛（均在 visible ≥ 1024）；小窗口精确倍数仅方向性"
+open_questions:
+  - "是否需要一个引擎配置期的静态 auto（按已知最大上下文选 ns）——只能配置期定，"
+  - "不能 kernel 内分支；当前建议保持默认关闭"
+next_task_id: |
+  等待栈合并；或 TLLM-P0-005（direct decode 接入 Transformer+FFI 的收尾 /
+  能力边界文档 PR-6），或 backlog 下一条。
+next_exact_command: |
+  cd tiny-llm && git fetch origin
+  gh pr list   # 栈 #4→#7→#9→#10→#11→#12→#13→#14；#6 独立
+  # 复现 PR-D（约 8–10 分钟，先确认 GPU 空闲）
+  ./build/tiny_llm_kernel_bench --dpa-bench --num-splits 1,2,4,8,16 \
+    --warmup 20 --reps 1000 --batch 100 --repeats 3 --clock-warmup 4 \
+    --out /tmp/splitkv.raw.jsonl
+```
+
 
 - 环境（当前机器，不是历史上的 RTX 3060 Laptop）：RTX 5070 Ti 16GB（sm_120）、
   CUDA 13.3.73 / driver 615.65.06、GCC 13.3、CMake 3.28.3。
