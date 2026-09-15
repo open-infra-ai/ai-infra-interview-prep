@@ -534,8 +534,13 @@ PSRV-P0-001/002/003 的 server 侧取消/背压/指标语义未验证完成度�
 6 处 UnboundedSender 说明 P0-002 大概率未做）；PSRV-P1-002 需要钉版本 GGUF
 模型 artifact（当前机器无模型文件）。
 
+**合并终态（2026-09-15）**：tiny-llm PR #17 MERGED → master `f3d1f5b`
+（241/241 本地全过）；paged-serving PR #21 MERGED → master `4986a05`
+（247/247 本地全过，clippy -D warnings 绿）。两仓 open PR 清零。
+
 next_task_id: |
-  等 PR #17（tiny-llm）与 PR #21（paged-serving）评审合并；之后
-  PSRV-P0-002（有界背压，L3 需设计评审）或 PSRV-P1-001（若 P0-004 合入）。
+  PSRV-P0-002（有界背压，L3 → 先走 L3_L4_DESIGN_REVIEW_PACKAGES G0-G8；
+  server.rs 现存 6 处 UnboundedSender）；并行候选 PSRV-P1-001
+  （validator 语义升级，L2，P0-004 已合入解锁）。
 next_exact_command: |
-  cd paged-serving && gh pr checks 21 && cd ../tiny-llm && gh pr checks 17
+  cd paged-serving && git log --oneline -3 && grep -c UnboundedSender src/server.rs
