@@ -496,3 +496,46 @@ next_task_id: |
   cuda-foundations/trifuse 方向）。
 next_exact_command: |
   cd tiny-llm && gh pr view 16 --json mergeable,statusCheckRollup
+
+### 12. 追加（2026-09-15 第三段）：layer splitkv 平凡相等加固 + PSRV-P0-004
+
+**layer 级加固（tiny-llm PR #17，`tllm-splitkv-layer-probe`，commit c28941d）**：
+§11 遗留项完成。新增 `SplitKvEntryActuallyWritesPartials`——毒化
+`attn_partial`（fp32 哨兵 -12345.25）与 `attn_buf`（7.0），对 legacy/direct
+× {2,4} 各跑一次 splitkv decode，断言已用 partial 槽位与 combine 输出被真实
+覆写；kernel 空转（partial_workspace==nullptr 静默 return）则显式失败。
+同时把 `SplitKvChangesNumericsOnlySlightlyVersusSinglePass` 从 5% 相对容差
+收紧到 2e-3 绝对容差（benchmark 实测等价噪声 ~6e-5）。**mutation 验证**：把
+transformer.cpp 回退到分配修复前（acb91ef），新探针与收紧后的容差双双变红
+——证明加固有效而非自我安慰。修复后 241/241 全过，CI 绿。
+
+**serving 侧任务选择（paged-serving PR #21，`psrv-p0-004-loadgen-http-regressions`，commit 54e7ae8）**：
+PSRV-P1-* 依赖核查结果——P1-001 依赖 P0-004、P1-003 依赖 P0-003/004+P1-001、
+P1-004 依赖 P1-001/002/003；P1-002（L3）需设计评审且无本地 GGUF 模型。实际
+检查发现 **PSRV-P0-004 未完成**（loadgen.rs 只有解析器/纯函数测试，无真实
+HTTP server 回归；server.rs 仍有 6 处 UnboundedSender → P0-002 也未做）。
+按"未完成前置先做前置"规则，执行 PSRV-P0-004（L2，服务线入口任务，
+NEXT_AGENT_START_HERE.md 指定）。
+
+**PSRV-P0-004 交付**：loadgen.rs 测试模块内建一次性本地 server
+（std::net::TcpListener，crate 未启用 tokio "net" feature），读完整请求后
+按剧本写响应，端到端驱动 `run_request` 覆盖全部错误分类：http_429/4xx/5xx、
+connection（绑定即释放的无监听端口）、timeout（server 静默 + client 1s 超时）、
+protocol_error（SSE 内非法 JSON / 非法 UTF-8）、stream_error（服务端错误帧
+消息透传 detail）、no_done（EOF 无 [DONE]）。另覆盖 LF/CRLF 端到端、UTF-8
+跨 TCP 写拆分、usage 有/无与 coverage 不完整、error 聚合、warmup 排除。
+两处最小生产改动：no_done 补非空 detail（验收要求每类错误非空 detail）；
+build_summary 显式过滤 measured_index.is_some()（"warmup 不进 summary"
+从调用方约定固化为聚合不变量）。18/18 loadgen 测试 ~1s 通过（无长 sleep、
+无外网）；全套 246 条 + clippy -D warnings + fmt 全绿。
+
+**遗留**：closed/poisson 主循环仍在 main 内未拆出单测（走 run_sweep e2e）；
+PSRV-P0-001/002/003 的 server 侧取消/背压/指标语义未验证完成度（server.rs
+6 处 UnboundedSender 说明 P0-002 大概率未做）；PSRV-P1-002 需要钉版本 GGUF
+模型 artifact（当前机器无模型文件）。
+
+next_task_id: |
+  等 PR #17（tiny-llm）与 PR #21（paged-serving）评审合并；之后
+  PSRV-P0-002（有界背压，L3 需设计评审）或 PSRV-P1-001（若 P0-004 合入）。
+next_exact_command: |
+  cd paged-serving && gh pr checks 21 && cd ../tiny-llm && gh pr checks 17
