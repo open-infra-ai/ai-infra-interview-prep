@@ -424,7 +424,9 @@ task_id: TLLM-P0-005
 status: pr_open             # PR #16 已建，待评审合并
 repository: open-infra-ai/tiny-llm
 current_branch: tllm-p0-005-ffi-dispatch
-current_commit: 7a248cb     # 1d772e1 fix + c708064 test + 7a248cb docs(PR-6)
+current_commit: a4a3dd7     # 1d772e1 fix + c708064 test + 7a248cb docs(PR-6)
+                            # + 3e869bd legacy-splitkv 入口同测 + cf2bef6
+                            #   逐位 probs/NaN 加固 + a4a3dd7 decode 中途块表增长
 base: master @ acb91ef
 dirty: false
 complexity: L3
@@ -463,9 +465,12 @@ master 全量 236 tests 通过、Pages 构建恢复绿。
   hidden=128/heads=4→kv=2/head_dim=32/vocab=64、确定性伪随机权重、tied lm_head），
   走生产加载全链路（parse → validate → loadGGUF → CUDA 分配 → FFI 执行）。
 - 断言分级：`legacy`/`direct`/`auto`/`splitkv=1` 逐位等价 → 逐步 token id 严格
-  相等；`splitkv>1` 容忍 fp32 归约序差异 → 逐步比较**完整输出概率分布**
-  （`logprobs_k=vocab`，|Δprob| ≤ 0.02）；decode 固定喂 token，单步 argmax 翻转
-  不级联（合成模型 top-2 logit 间距可小于 splitkv 噪声，token 比对会 flaky）。
+  相等**且**逐步概率分布容差 0 比较（logits 逐位 ⇒ probs 逐位，真正的端到端
+  逐位门禁）；`splitkv>1` 容忍 fp32 归约序差异 → 逐步比较**完整输出概率分布**
+  （`logprobs_k=vocab`，|Δprob| ≤ 0.02），**direct 与 legacy 两条 splitkv 入口
+  都测**（该缺陷曾同时影响两者）；decode 固定喂 token，单步 argmax 翻转不级联；
+  块表在 decode 第 17 步随可见窗口跨进第 5 块（生产常态事件）；probsNear 显式
+  拒绝 NaN（`NaN > tol` 恒 false，否则会静默漏过）。
 - 另覆盖：策略 2 不受开关影响；块表不足 `TLLM_ERR` 且序列存活；非法
   `TLLM_ATTN_SPLITKV` 在下一次 `attentionPaged` 入口干净失败、句柄可恢复。
 - **环境解析语义修正**：`TLLM_ATTN_SPLITKV` 在 `attentionPaged` 入口无条件解析，
