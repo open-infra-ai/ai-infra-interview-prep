@@ -416,3 +416,76 @@ next_exact_command: |
 - 未产生任何性能数字、profiler 结论或 serving 证据。
 - layer 级最终 hidden 比对在本文件里只是次要检查：合成权重下残差主导，fp16 输出
   量化会吞掉 attention 的微小差异，因此不作为门禁依据。
+
+### 11. PR 栈已全部合入 + TLLM-P0-005 捕获 attn_partial 生产缺陷（2026-09-15）
+
+```yaml
+task_id: TLLM-P0-005
+status: pr_open             # PR #16 已建，待评审合并
+repository: open-infra-ai/tiny-llm
+current_branch: tllm-p0-005-ffi-dispatch
+current_commit: 7a248cb     # 1d772e1 fix + c708064 test + 7a248cb docs(PR-6)
+base: master @ acb91ef
+dirty: false
+complexity: L3
+artifacts:
+  - "PR #16  tllm-p0-005-ffi-dispatch → master（fix + test + docs 三 commit）"
+  - "tests/test_ffi_paged_dispatch.cpp：合成 GGUF + C ABI 级差分门禁（4 用例）"
+  - "docs/architecture/kv-cache.md：Decode attention dispatch 能力边界小节"
+```
+
+**栈合并终态（gh 权威输出）**：#4→#7→#9→#10→#11→#12→#13→#14 按序全部合入
+master；随后独立 PR #5（DPA 设计包）、#6（C ABI 几何校验）、#15（Pages 死链）
+亦合入，tiny-llm 一度 open PR = 0。#5/#6 与 master 冲突均本地 merge 解决
+（`config.mts` 侧边栏、`CHANGELOG.md` Added/Fixed/Tests 条目合并）。合并后
+master 全量 236 tests 通过、Pages 构建恢复绿。
+
+**TLLM-P0-005 的主要交付不是测试本身，而是它捕获的生产缺陷**：
+
+`LayerWorkspace::allocate()` 从未分配 `attn_partial`（PR-C `743119b` 留下
+"EXPERIMENT: allocation disabled" 标记混入主干）。两个 splitkv kernel 入口对
+`partial_workspace == nullptr` 的防御检查**静默返回**，`attn_buf` 残留陈旧数据被
+`wo` 投影消费——经 C ABI 表现为 top-1 prob 0.051 vs 0.009（logit 差 ~1.7），
+不崩溃、不报错。既有 layer 级门禁全部漏检：
+`SplitKvLegacyAndDirectAgreeBitwiseAtSameSplits` 比较两条同样空转的路径（平凡
+逐位相等），5% 相对容差冒烟检查吸收了陈旧读差异；kernel 级测试自分配 partial
+缓冲，从未覆盖接线缺口。**教训：dispatch 开关的端到端验证必须在真实 ABI 边界
+做一次，layer 级共享 fixture 会把"两条路径同样坏"测成绿。**
+
+修复：`allocate()` 按 `num_heads × kAttnMaxSplits × (2 + head_dim)` fp32 分配
+（头文件早已声明此布局与"按上界预分配"契约；异常清理与 `free()` 本就处理该
+指针）。修复后全量 240 tests 通过——之前空转通过的 layer 级 splitkv 测试现在
+真正执行 kernel 也全绿。
+
+**FFI 级测试设计要点**（`tests/test_ffi_paged_dispatch.cpp`）：
+
+- 测试内按 GGUF v3 规范构造合成模型（F16 tensor、2 层 qwen2 小几何
+  hidden=128/heads=4→kv=2/head_dim=32/vocab=64、确定性伪随机权重、tied lm_head），
+  走生产加载全链路（parse → validate → loadGGUF → CUDA 分配 → FFI 执行）。
+- 断言分级：`legacy`/`direct`/`auto`/`splitkv=1` 逐位等价 → 逐步 token id 严格
+  相等；`splitkv>1` 容忍 fp32 归约序差异 → 逐步比较**完整输出概率分布**
+  （`logprobs_k=vocab`，|Δprob| ≤ 0.02）；decode 固定喂 token，单步 argmax 翻转
+  不级联（合成模型 top-2 logit 间距可小于 splitkv 噪声，token 比对会 flaky）。
+- 另覆盖：策略 2 不受开关影响；块表不足 `TLLM_ERR` 且序列存活；非法
+  `TLLM_ATTN_SPLITKV` 在下一次 `attentionPaged` 入口干净失败、句柄可恢复。
+- **环境解析语义修正**：`TLLM_ATTN_SPLITKV` 在 `attentionPaged` 入口无条件解析，
+  非法值对 prefill 同样显式失败（fail-fast），并非"仅 decode 读取"。
+
+**PR-6 能力边界文档**：`kv-cache.md` 新增 dispatch 小节，只引用两份已归档
+kernel 级报告（09-14 dpa、09-15 splitkv），明确「kernel 级证据，无 serving
+TTFT/TPOT 结论」与默认值现状（`TLLM_PAGED_ATTENTION=legacy`、
+`TLLM_ATTN_SPLITKV` 关——09-14 报告显式否决了默认翻转）。
+
+**验证**：FfiPagedDispatchTest 4/4（修复前核心用例红）；全量 240/240；
+memcheck + initcheck 均 0 error；clang-format-19 clean；VitePress build clean。
+
+**遗留**：layer 级 `SplitKvLegacyAndDirectAgreeBitwiseAtSameSplits` 的"平凡
+逐位相等"缺陷仍在（现在因修复而变真），值得后续加固（如在 splitkv 开启时断言
+partial 缓冲非空或被写入）；kernel 级 `test_attention_splitkv.cpp` 与生产工作区
+分配路径不同源的问题同类。
+
+next_task_id: |
+  等 PR #16 评审合并；之后 backlog 下一条（PSRV-P1-* serving 侧或
+  cuda-foundations/trifuse 方向）。
+next_exact_command: |
+  cd tiny-llm && gh pr view 16 --json mergeable,statusCheckRollup
