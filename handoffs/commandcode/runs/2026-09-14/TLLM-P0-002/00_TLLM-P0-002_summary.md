@@ -424,10 +424,11 @@ task_id: TLLM-P0-005
 status: pr_open             # PR #16 已建，待评审合并
 repository: open-infra-ai/tiny-llm
 current_branch: tllm-p0-005-ffi-dispatch
-current_commit: ac25728     # 1d772e1 fix + c708064 test + 7a248cb docs(PR-6)
+current_commit: ce476a1     # 1d772e1 fix + c708064 test + 7a248cb docs(PR-6)
                             # + 3e869bd legacy-splitkv 入口同测 + cf2bef6
                             #   逐位 probs/NaN 加固 + a4a3dd7 decode 中途块表增长
                             # + ac25728 无 GPU runner GTEST_SKIP 门控
+                            # + ce476a1 top-k 哨兵过滤（id=-1 伪条目）
 base: master @ acb91ef
 dirty: false
 complexity: L3
