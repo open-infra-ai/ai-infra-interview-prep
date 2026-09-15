@@ -553,8 +553,17 @@ n>1 部分准入失败）。P0-002 未做（6 处 unbounded：单请求通道 + 
 counter）；§7.5 非 sleep 测试矩阵；G0-G8 自评 + 3 个开放问题。
 G8 拆分：PR-1 设计 → PR-2 取消所有权 → PR-3 有界 channel → PR-4 指标。
 
+**评审与合并终态（2026-09-15）**：self-review 发现 4 个真实缺陷并已修订
+（a6988d5，详见文档 §10 修订记录与 PR review）：Done 终态改带外 oneshot
+通道（满 mailbox 下终态不可投递）；inflight 口径改 response-body
+lifetime（流式原口径恒不计数）；shutdown 改 engine 级 watch 广播
+cancel-all（graceful 不断连可无限挂起）；watch Err 分支冻结为取消。
+PR #22 MERGED → master `846a070`。3 个开放问题按文档默认决议执行
+（Cancelled 新变体、capacity=64、error type=internal_error）。
+
 next_task_id: |
-  等 PR #22 设计评审（3 个开放问题需 reviewer 决定）。可并行：
-  PSRV-P1-001 validator 语义升级（L2，已解锁，无设计门禁）。
+  PSRV-P0-001 实现（设计 PR-2：watch token + RequestGuard + engine 每步
+  检查 + admission 前置检查 + n>1 部分准入取消 + shutdown 广播），
+  依据已合入设计包 §3-§5；之后 PSRV-P0-002 有界 channel（PR-3）。
 next_exact_command: |
-  cd paged-serving && gh pr view 22 --json mergeable,reviews
+  cd paged-serving && git checkout -b psrv-p0-001-request-guard
