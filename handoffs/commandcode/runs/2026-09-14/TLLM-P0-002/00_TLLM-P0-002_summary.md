@@ -421,7 +421,7 @@ next_exact_command: |
 
 ```yaml
 task_id: TLLM-P0-005
-status: pr_open             # PR #16 已建，待评审合并
+status: merged             # PR #16 已合入 master @ aff997f（CI/Pages 运行中，分支内已全绿）
 repository: open-infra-ai/tiny-llm
 current_branch: tllm-p0-005-ffi-dispatch
 current_commit: ce476a1     # 1d772e1 fix + c708064 test + 7a248cb docs(PR-6)
