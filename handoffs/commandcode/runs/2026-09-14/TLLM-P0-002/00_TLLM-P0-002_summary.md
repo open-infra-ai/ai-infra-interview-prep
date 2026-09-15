@@ -567,3 +567,57 @@ next_task_id: |
   依据已合入设计包 §3-§5；之后 PSRV-P0-002 有界 channel（PR-3）。
 next_exact_command: |
   cd paged-serving && git checkout -b psrv-p0-001-request-guard
+
+### 14. 追加（2026-09-15 第五段）：PSRV-P0-001 取消所有权实现提交
+
+**分支/PR**：`psrv-p0-001-request-guard` → paged-serving **PR #23**（设计包 #22
+已合入后的 G8 PR-2）。单 commit。
+
+**实现要点**（对齐已批准设计）：
+- `Submission` 携带 `watch::Receiver<bool>`；handler 侧 `RequestGuard`（持有
+  sender，Drop 置位 true）由 `AppState::submit` 一并返回。
+- `engine_loop` 每步 `cancel_flagged`：shutdown 广播 + 每 waiter 的 cancel
+  token 检出 `has_changed() != Ok(false)`（`Err`=sender 全 drop=owner 消失，
+  按设计冻结为取消）；`Waiter.cancelled` 保证 `cancel_request` 恰好一次；
+  取消后**当步**排出终态 Done（否则 loop 阻塞在 submission `recv()`，
+  cancelled 请求的终态滞留——实测会死等）。
+- `admit_submission` 准入预检：排队期 owner 消失的 submission 跳过
+  `engine.submit_request`，不分配调度/KV 资源。
+- `respond_generation`：流式收集全部 guards 移入 stream 生成器；部分准入
+  失败时 `drop(guards)` 显式取消已准入候选（Done 到达即槽位已释放）。
+- guard 生命周期：unary `generate()` 全程持有；流式 `stream_response`/
+  `stream_response_multi` 移入 `stream!` 体内持有至响应体结束/drop。
+- `create_router_with_engine_and_shutdown` 返回 `(Router, watch::Sender)`；
+  `main` 在 `with_graceful_shutdown` 信号回调中 `send(true)`，引擎循环
+  广播取消全部在途请求 → graceful drain 有界。
+
+**实现中发现并修复的真实缺陷**（超出设计文档细节）：
+保活 sender 原置于 `AppState`——`Router::oneshot` 响应返回后 router 即析构
+→ `_shutdown_tx` drop → sender 计数归零 → `has_changed()` 返回 `Err` →
+**误判为 shutdown 取消全部在途请求**（5 个既有流式测试复现：首个 chunk 后
+收到 "request cancelled"）。根因定位链：guard drop 嫌疑 → backtrace 排除 →
+shutdown Err 探针 → tokio watch 源码确认 `Err`=sender 全 drop。修复：保活
+sender 由 engine loop 自持（信号与消费方同寿），shutdown 仅显式
+`send(true)` 触发；`create_router` 经包装函数 drop 返回端不再误触发。
+
+**测试**：
+- 引擎循环级 7 个确定性用例（`server.rs` mod tests，直接驱动
+  `engine_loop`，事件通道即同步屏障，无 sleep）：decode 中取消+终态
+  恰好一次+槽位释放；pending 取消零产出+无串扰；排队期预检跳过
+  （覆盖 Err 分支）；cancel_flagged 单元级 pending 终态排出；
+  shutdown 广播取消全部；跨请求无串扰；部分准入释放；终态后
+  drop 无害。
+- HTTP 级：SSE drop 加 `paged_engine_failed_requests` 指标屏障断言；
+  unary future abort（active_sequences 归零）；n>1 部分准入 429→
+  槽位释放→follow-up 200。
+- 全量：lib 161 + integration 40 + 其余共 257 全过；clippy
+  `-D warnings` 绿（StreamContext 收敛参数、await_chunk 去 never_loop）；
+  fmt 绿。
+
+**范围边界（明确未做，留给后续 PR）**：有界事件 channel/try_send
+overflow（P0-002/PR-3）；oneshot 终态带外通道；cancelled 独立 metric、
+inflight 口径、malformed JSON 计 errors（P0-003/PR-4）。
+
+**next_task**：CI 过 + 评审 → 合并 #23；之后 PR-3（P0-002 有界 channel：
+单请求 mailbox `bounded(64)` + try_send overflow-cancel、fan-in 有界+转发
+task、Done 带外 oneshot）；并行可做 PSRV-P1-001（validator，L2 已解锁）。
