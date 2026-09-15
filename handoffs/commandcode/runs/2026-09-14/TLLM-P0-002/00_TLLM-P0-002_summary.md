@@ -538,9 +538,23 @@ PSRV-P0-001/002/003 的 server 侧取消/背压/指标语义未验证完成度�
 （241/241 本地全过）；paged-serving PR #21 MERGED → master `4986a05`
 （247/247 本地全过，clippy -D warnings 绿）。两仓 open PR 清零。
 
+### 13. 追加（2026-09-15 第四段）：PSRV-CANCEL-BP 设计包提交
+
+**P0-001 完成度核实**：`c5bd4ea` 断连取消存在但纯被动（send-failure 检测），
+§7.2 的 9 类触发中 4 类有空窗（pending/prefill 断连、HF 空窗、unary abort、
+n>1 部分准入失败）。P0-002 未做（6 处 unbounded：单请求通道 + n>1 fan-in）。
+
+**设计包**：`docs/architecture/cancellation-backpressure-design.md`（PR #22，
+`psrv-p0-002-cancel-bp-design`）——§7.1 状态机所有权表 + 4 条 invariant；
+§7.2 主动取消机制（watch token + RequestGuard RAII，engine 每步检查）；
+§7.3 四条 channel 策略（单请求 mailbox try_send + overflow-cancel、fan-in
+有界+转发 task、submission 1024 冻结、sampler coalesce）；§7.4 指标口径
+（inflight=handler、malformed JSON 计 errors=breaking、cancelled 独立
+counter）；§7.5 非 sleep 测试矩阵；G0-G8 自评 + 3 个开放问题。
+G8 拆分：PR-1 设计 → PR-2 取消所有权 → PR-3 有界 channel → PR-4 指标。
+
 next_task_id: |
-  PSRV-P0-002（有界背压，L3 → 先走 L3_L4_DESIGN_REVIEW_PACKAGES G0-G8；
-  server.rs 现存 6 处 UnboundedSender）；并行候选 PSRV-P1-001
-  （validator 语义升级，L2，P0-004 已合入解锁）。
+  等 PR #22 设计评审（3 个开放问题需 reviewer 决定）。可并行：
+  PSRV-P1-001 validator 语义升级（L2，已解锁，无设计门禁）。
 next_exact_command: |
-  cd paged-serving && git log --oneline -3 && grep -c UnboundedSender src/server.rs
+  cd paged-serving && gh pr view 22 --json mergeable,reviews
