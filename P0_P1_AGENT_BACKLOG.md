@@ -592,8 +592,11 @@ prefill 保留 gather。9/14–9/15 是 kernel 结果，不证明模型或 Servi
 
 状态（2026-10-04）：[PR #23](https://github.com/open-infra-ai/paged-serving/pull/23)
 为 OPEN，head `25811e35c2d978f39efd6eb9731dc6fadc9c8a25`，CI check SUCCESS。
-PR 已有 RequestGuard/watch 主动取消；默认分支未合入，先 review/复核，不另写一套，
-不自动 merge。完整失败/回收矩阵仍按下面验收核对。
+整改分支 [`59d90c8`](https://github.com/open-infra-ai/paged-serving/commit/59d90c84aa0ea849322c18d3c741f8f9eef34dc9)
+已复用 PR 的 RequestGuard/watch 并补有界文本队列、带外终态和失败回收。Rust 1.88
+本地 255 个默认测试与 17 个 doc tests 通过，24 个服务内联与 45 个 HTTP/SSE 测试
+重复 10 轮通过。默认分支和 PR #23 未改动，不自动 merge，不另写取消实现；
+真实 CUDA backend / HF / 网络压力仍按下面验收补足。
 
 - **复杂度**：L3。
 - **目标**：consumer 关闭、handler abort、`n>1` 部分准入失败时主动取消所有已准入请求，
@@ -612,10 +615,16 @@ PR 已有 RequestGuard/watch 主动取消；默认分支未合入，先 review/�
 
 ### PSRV-P0-002：为 SSE 和 fan-in 建立有界背压
 
+状态（2026-10-04）：上述整改分支已完成 CPU 验收：mailbox 默认 64、可配置、
+引擎 try_send、overflow 明确失败、成功终态先排空文本、unary 不订阅文本。
+多候选直接 SelectAll 拉取，删除第二层 fan-in 队列与转发任务；队列项数有界不等于
+全进程字节内存有界。默认容量仍待网络负载调优，不将此标为生产验收完成。
+
 - **复杂度**：L3。
 - **目标**：替换单请求事件和 `n>1` fan-in 的无界队列，冻结慢消费者策略。
-- **当前证据**：`src/server.rs` 使用 `mpsc::UnboundedSender/Receiver`，fan-in 也新建
-  unbounded channel；submission queue 虽有 1024 上限，但 token event 没有。
+- **当前证据**：默认分支仍有无界事件通道；整改分支的 `RequestEvents`/`EventSender`
+  与 `stream_response_multi` 已替换，具体实现和测试见
+  [决策笔记](https://github.com/open-infra-ai/paged-serving/blob/59d90c84aa0ea849322c18d3c741f8f9eef34dc9/.agents/notes/implemented/feature/2026-10-04-bounded-events-and-cancellation.md)。
 - **前置与范围**：依赖 PSRV-P0-001 的 ownership；允许改 server、config、error 和测试；
   禁止阻塞整个 engine loop、禁止无限缓冲、禁止静默丢 token。
 - **验收**：容量可配置且有安全默认；慢 consumer 产生明确 cancel/error/overflow policy；
@@ -631,7 +640,9 @@ PR 已有 RequestGuard/watch 主动取消；默认分支未合入，先 review/�
 - **目标**：明确 requests/errors/inflight/streaming 和 engine counters 的计数单位、开始/
   结束时点及错误路径。
 - **当前证据**：`src/server.rs::ServerMetrics/SharedEngineMetrics` 与 `/metrics` 已存在；
-  现有测试主要验证名称，流式 response 构造后 inflight guard 已释放。
+  整改分支已把 inflight guard 移入 SSE body，数值回归覆盖 1→0 和 n>1 不乘候选数。
+  剩余是 typed Cancelled / 独立取消计数、malformed JSON、SSE terminal error、
+  完整 HELP 与引擎计算成功/HTTP 交付成功的区分，不能据旧描述再次重做 inflight。
 - **前置与范围**：依赖取消/背压设计；允许改 metrics 实现、文档和数值测试；
   禁止改变指标含义却沿用原名而不记录 breaking change。
 - **验收**：malformed JSON、429、admission error、SSE terminal error、disconnect、

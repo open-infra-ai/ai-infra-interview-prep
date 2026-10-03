@@ -147,12 +147,17 @@ W3 起每周补充当周主题的 3–5 题并自评。此文件是索引 + 示�
 ## Q11（P0·Serving）断连取消为什么不能只靠 send 失败？（W8）
 
 - **答案要点**：没有新 token 时 send 不发生；consumer/handler 所有权应驱动取消，
-  包括 n>1 部分准入、abort、重复取消和 exactly-once 回收。bounded channel 还需满队列策略。
+  包括 n>1 部分准入、abort、重复取消和 exactly-once 回收。引擎 try_send，满队列局部取消；
+  独立 oneshot 让失败终态不被满队列阻挡，成功终态先排空文本。unary 不订阅文本，
+  多候选直接拉取合并；算完最后 token 不等于完整交付。
 - **追问树**：慢客户端怎样不阻塞全局 worker？→ 满队列丢 token 是否合法？→ 取消与 EOS
-  同时到达怎么办？→ 谁保证 block/metric 回基线？
+  同时到达怎么办？→ 最后一步算完但文本投递溢出，哪个 counter 仍增加？
+  → 谁保证 block/metric 回基线？→ 为什么网络 shutdown 仍不能声称固定排空时限？
 - **代码定位**：`paged-serving/src/server.rs`；[PR #23](https://github.com/open-infra-ai/paged-serving/pull/23)
   的 RequestGuard/watch，与默认分支对比。
-- **实验证据**：2026-10-04 PR 为 OPEN、check SUCCESS；不声称已合入或完整保障已完成。
+- **实验证据**：PR #23 仍 OPEN；[整改提交](https://github.com/open-infra-ai/paged-serving/commit/59d90c84aa0ea849322c18d3c741f8f9eef34dc9)
+  的 CPU 回归覆盖队列满、末步溢出、静默 decode、body drop、abort、部分准入与 backend 回收。
+  默认分支尚未合入，未执行真实 CUDA/网络压力；独立取消计数仍待补。
 - **评分/自评**：B 需说清无新 token 场景；A 需推演部分准入失败与资源回收。__待本人复测__。
 
 ## Q12（P1·工程）为什么 stable CI 绿不能证明 MSRV？（W7）

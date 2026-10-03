@@ -167,15 +167,16 @@ git -C <repo> status --short
 若用户没有指定岗位或任务，默认建议：
 
 ```text
-先复核已有证据与未合入 PR，再选择剩余验收：
-PSRV-P0-001 的 PR #23 review → PSRV-P0-002 有界背压（两者不自动合并或开工）
+先复核已推送的整改分支与默认分支差异，再选择剩余验收：
+PSRV-P0-001/002 的 CPU 证据 → PSRV-P0-003 完整指标 / PSRV-P0-004 网络失败
 ```
 
 原因：
 
 - direct oracle、kernel 和集成已存在，旧默认任务容易重复开发；
-- PR #23 在 2026-10-04 为 OPEN，已有主动取消实现，先审查当前差异；
-- 无界 SSE/fan-in 队列仍存在，关闭失败回收与背压比增加新功能更优先。
+- PR #23 在 2026-10-04 为 OPEN；整改分支 `59d90c8` 已复用并扩展取消/背压，
+  本地 CPU 回归通过；复核 [任务卡状态](P0_P1_AGENT_BACKLOG.md#psrv-p0-001实现请求所有权驱动的主动取消)，不自动合并；
+- 默认分支尚未更新不等于“需要重写”；下一步补完整指标与真实 backend/网络验收。
 
 替代入口：
 
@@ -463,7 +464,7 @@ CPU、GPU correctness、sanitizer、performance 分开报告。
 
 ```text
 先看本人闭卷诊断最低分和当前 PR/证据
-  → 综合/Serving：review PR #23 → 剩余有界背压与失败回收
+  → 综合/Serving：复核整改分支 → 完整指标 / 真实 backend 与网络验收
   → Runtime：复核已有 direct/split-KV → 端到端配对 A/B
   → Kernel：cuflash workspace/stream 安全
 ```

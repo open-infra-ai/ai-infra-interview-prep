@@ -52,7 +52,8 @@ CUDA 基础
 
 1. **Runtime/综合方向**：已有 direct/split-KV 的当前 GPU/集成复核、端到端配对 A/B；不从零重做。
 2. **Kernel 方向**：`cuflash` decode workspace/stream safety。
-3. **Serving 方向**：先 review 主动取消 PR #23，再关闭 bounded backpressure 与失败回收。
+3. **Serving 方向**：取消/有界队列已在整改分支完成 CPU 回归，先评审该实现，
+   再补完整指标与真实 backend/网络验收，不从零重做。
 
 三条路径只能选一条作为当前深改造。其余保持 backlog，不同时进入 production
 implementation。
@@ -172,10 +173,9 @@ CUF-P0-001
 主路线：
 
 ```text
-PSRV-P0-004
-  → PSRV-P0-001 PR #23 review（OPEN 不等于已合入）
-  → PSRV-P0-002 设计与实现
-  → PSRV-P0-003
+PSRV-P0-001/002 整改分支 CPU 验收复核（未合入不等于未实现）
+  → PSRV-P0-003 完整指标（inflight 已有回归）
+  → PSRV-P0-004 网络失败
   → PSRV-P1-001
   → PSRV-P1-002
   → PSRV-P1-003
@@ -252,7 +252,7 @@ design
 | 6 | TRI-P0-001 | 冻结 custom-op eager/fake 契约 |
 | 7 | TLLM-P0-002 | 复核已有 oracle，不重复实现 |
 | 8 | CUF-P0-001 | 冻结 workspace/stream 设计 |
-| 9 | PSRV-P0-001 | review 已有 PR #23，验证失败与回收，不自动合并 |
+| 9 | PSRV-P0-001 | review 整改分支与 PR #23，复核 CPU 回收；真实后端验收待补，不自动合并 |
 | 10 | KVT-P0-002 | 建立 schema v2 provenance |
 
 此表是候选池，不是必须逐个重做的清单；代码与证据优先于历史顺序。本人 W7 诊断
