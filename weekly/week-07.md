@@ -1,13 +1,13 @@
 ---
 week: 7
-title: Paged KV、Continuous Batching、调度
+title: 可信度整改、闭卷诊断、Paged KV 答辩
 start: 2026-10-05
 end: 2026-10-11
 hours: 24
 status: upcoming
 ---
 
-# 第 7 周：Paged KV、Continuous Batching、调度
+# 第 7 周：可信度整改、闭卷诊断、Paged KV 答辩
 
 ## 相关文档
 
@@ -18,34 +18,37 @@ status: upcoming
 
 ## 本周目标
 
-把 paged-serving 的调度器状态机与不变量讲清楚，形成"推理系统设计"的完整叙事。
+验收第一批工程可信度整改，再用本人闭卷诊断确定短板。把“仓库里有什么”和
+“本人能当场完成什么”分开，不重写已有 direct/split-KV，不补造 W1–W6 进度。
 
 ## 先修知识
 
-W5–W6。
+已有源码和 raw 即可启动；W1–W6 的本人完成情况通过诊断补证，不要求先补齐全部清单。
 
 ## 时间预算
 
-24h：paged-serving 代码重读 8h · 状态机/不变量文档 6h · 对照阅读 4h · C++/算法 2h · 复盘 4h。
+暂定 24h：整改复核/实验 8h · 核心知识 5h · 限时编程 4h · 闭卷诊断/答辩 5h · 岗位 2h。
+18h 档减少拓展实验；12h 档保留诊断、整改复核和一条请求链路，扩展项顺延。
 
 ## 阅读范围
 
 - open-infra-ai/paged-serving（主线）：block 分配器、调度循环、HTTP 控制面
-- Fork mini-sglang（P1）：对照调度主循环
-- Fork vllm（P2，"五个一"）：core scheduler 与 block manager
-- Fork sglang（P2，"五个一"）：scheduler 与 router
+- tiny-llm：`kernels/attention.cu`、`src/transformer.cpp`、9/14–9/15 raw 与汇总工具
+- trifuse：两投影计算图与错误输出拒绝计时；paged-serving 的 MSRV/锁定依赖门禁
 
 ## 动手实验
 
-1. 整理状态机图：请求生命周期（waiting→running→preempted→finished）与迁移条件。
-2. 写出分配器不变量清单（如"引用计数=使用该 block 的请求数"），逐条对应代码。
-3. 复跑 3 并发 e2e 对齐实验，复述量化差异的诚实记录方式。
+1. 按 BASELINE 做 90min 闭卷诊断，记录提示次数、错误和源码定位，禁止 Agent 代答后计分。
+2. 独立运行 raw 汇总与 CPU 回归；解释为什么 correctness pass、统计收敛和速度优势是三件事。
+3. 徒手画实际请求生命周期，按真实 enum/cleanup 对齐；抢占未实现，不画成现有状态。
+4. 30min 限时实现简化 block allocator，验证容量守恒、重复释放和失败时原状态不变。
 
 ## 可验证交付物
 
-- [ ] 状态机图 + 不变量清单（代码行级定位）
-- [ ] INTERVIEW_MATRIX Q3 达 B 级以上
-- [ ] vllm + sglang 的"五个一"产出
+- [ ] 第一批整改命令与结果核对（不把 CPU pass 当 GPU pass）
+- [ ] 本人 90min 诊断记录与最低分补课动作
+- [ ] 一条真实请求路径 + block 生命周期白板与源码定位
+- [ ] INTERVIEW_MATRIX Q3/Q8/Q9 闭卷评分与一次限时编程记录
 
 ## 面试问题
 
@@ -55,8 +58,8 @@ W5–W6。
 
 ## 退出条件
 
-状态机图能徒手画出并能答两层追问。
+能区分 direct 实现、legacy 默认和 kernel/Serving 证据；至少一个短板有本人复测记录。
 
 ## 未完成时
 
-sglang"五个一"可砍；vllm 与状态机文档不可降级。
+诊断不可由阅读替代；对照框架顺延 W10。只修诊断最弱项，不机械补跑全部历史周任务。

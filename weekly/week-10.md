@@ -1,13 +1,13 @@
 ---
 week: 10
-title: 项目证据包、简历项目、GitHub 展示
+title: 一个上游框架、证据包与简历
 start: 2026-10-26
 end: 2026-11-01
 hours: 24
 status: upcoming
 ---
 
-# 第 10 周：项目证据包、简历项目、GitHub 展示
+# 第 10 周：一个上游框架、证据包与简历
 
 ## 相关文档
 
@@ -20,37 +20,38 @@ status: upcoming
 
 ## 本周目标
 
-把 12 周积累的实验证据收进各技术仓结果页与组织 meta 索引；完成两版简历初稿；
-启动练手投递。
+只深读一个上游框架的一条请求路径，并与旗舰系统对照；把已有效的证据压成两版
+简历与答辩素材。默认 SGLang，岗位要求 vLLM 时替换，不同时通读两仓。
 
 ## 先修知识
 
-W1–W9 全部交付物。
+W7–W9 诊断和有效结果；不要求先做完所有历史 checklist。
 
 ## 时间预算
 
-24h：STAR 条目+Demo 脚本 10h · 简历两版 6h · GitHub 展示整理 4h · 练手投递 2h · 复盘 2h。
-（本周起求职桶占比提高，与 TOPIC_WEIGHTS 的后四周调整一致。）
+暂定 24h：上游调用链/最小实验 8h · 核心知识 5h · 限时编程 4h · 对照讲述 5h · 岗位/简历 2h。
+18h/12h 档砍拓展模块，只保留一条请求、一个关键结构与一张 claim 证据表。
 
 ## 阅读范围
 
 - open-infra-ai meta 仓的只读历史证据矩阵（仅作索引，不改写）
 - 各技术仓当前 README、benchmark 结果与复现命令
 - github-repos-hub 的 original-projects.md（简历候选池）
+- SGLang scheduler/KV/batch 路径（先绑定实际 checkout SHA）；NCCL/TP 最多公式级选修
 
 ## 动手实验
 
-1. 为两个主项目各写 Demo 脚本（一键跑通：build → benchmark → 输出关键数字）。
-2. 检查每个性能数字的口径五要素：硬件、软件版本、日期、commit、命令。
-3. 更新 holtwood 主页的项目展示（按 APPLICATION_PLAN 的项目顺序）。
-4. 把真实投递写入 `applications/tracking.local.md`，不提交私人数据。
+1. “五个一”：一条调用链、一个关键结构、一次最小实验、一张架构图、一道对照追问。
+2. 每个简历 claim 核对 source/test/raw/commit/边界/本人贡献；说不清的实现先退出主 bullet。
+3. 准备可现场执行的 demo 与无 GPU 备用方案；三张答辩牌每张限时 2min。
+4. 投递和主页改动经本人批准后执行；真实投递只写忽略的 .local 文件，不由 Agent 代造。
 
 ## 可验证交付物
 
-- [ ] 两个主项目 STAR 条目（数字全部可溯源）
+- [ ] 一个框架的“五个一”与 flagship 对照（含 SHA）
 - [ ] Demo 脚本 × 2
 - [ ] v-performance 与 v-serving 简历初稿
-- [ ] 投递跟踪表 + 首批 3–5 家练手投递
+- [ ] 两个主项目 claim 核对与本人 2min 讲述记录
 
 ## 面试问题
 
@@ -62,4 +63,4 @@ W1–W9 全部交付物。
 
 ## 未完成时
 
-投递可推迟到 W11；STAR 条目与 Demo 不可降级。
+源码拓展可砍；保留核心调用链和 claim 核对。对外投递不因计划安排自动获得授权。

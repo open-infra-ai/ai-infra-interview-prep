@@ -307,12 +307,13 @@ reviewer 接受为受限范围。
 
 ### 4.1 当前事实
 
-- `kernels/attention.cu::attention_decode` 消费连续 K/V。
+- 2026-10-04：本包作为设计评审清单保留，不表示 kernel 待从零实现。
+- `kernels/attention.cu` 有连续、direct paged 与 split-KV decode 入口。
 - `kernels/paged_kv.cu` 实现 scatter/gather。
-- `src/transformer.cpp::attentionPaged` 每层 scatter 到 physical pool，再 gather 到
-  `k_scratch/v_scratch`，最后调用连续 attention。
+- `src/transformer.cpp::attentionPaged` 按模式调用 legacy gather 或 opt-in direct；
+  默认 legacy、split 关闭，prefill 保留 gather。
 - `src/ffi.cpp` 维护 pool、scratch、block table 和 strategy 1/2。
-- 因此当前实现可称“paged KV storage/control path”，不能称 direct PagedAttention。
+- direct/split-KV 实现与 kernel 原始结果已有；端到端收益与新接口变更仍需独立门禁。
 
 ### 4.2 必须冻结的 kernel API
 

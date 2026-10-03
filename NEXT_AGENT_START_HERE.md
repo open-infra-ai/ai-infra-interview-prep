@@ -24,8 +24,9 @@ open-infra-ai/trifuse
 open-infra-ai/cuflash
 open-infra-ai/tiny-llm
 open-infra-ai/paged-serving
-open-infra-ai/kvtier
 ```
+
+`kvtier` 是本地私有孵化器，不进入公开注册表，不在此提供公开链接。
 
 个人执行仓：
 
@@ -59,6 +60,8 @@ Triton/PyTorch 对照：
 - 不新增第八个练习项目；
 - `cuflash` 和 `trifuse` 不是 `tiny-llm` runtime 硬依赖；
 - `tiny-llm` 当前 paged storage/gather 路径不能自动称为 direct PagedAttention；
+- direct paged/split-KV 已实现并有 9/14–9/15 kernel raw；默认 legacy、split 关闭，
+  端到端收益仍需独立实验，不从零重复 TLLM-P0-002/004/005；
 - `paged-serving` scheduler batching 不能自动称为 fused GPU batch compute；
 - `kvtier` 是上游研究和实验脚手架，不是自研生产 tiering engine；
 - CPU/build、GPU correctness、benchmark、profiler 和 Serving 是不同证据层。
@@ -92,7 +95,7 @@ Triton/PyTorch 对照：
 |--------|----------|
 | `holtwood/ai-infra-interview-prep` | 当前个人执行仓为 `open-infra-ai/ai-infra-interview-prep` |
 | `triton-fused-ops` | 当前公开仓名为 `trifuse` |
-| “五个技术仓” | 当前有六个技术仓，另有一个 meta 仓 |
+| 公开仓集合含 `kvtier` | 五个公开技术仓 + meta；kvtier 私有孵化，个人执行仓另列 |
 | `AICL-Lab` / `aicl-lab` | 历史组织名；archive 中保持原样 |
 | `/home/shane/...` 等固定路径 | 只表示历史机器；必须重新发现当前 checkout |
 | 2026-08 的 commit/CI/结果状态 | 历史快照；重新 fetch 和验证 |
@@ -164,15 +167,15 @@ git -C <repo> status --short
 若用户没有指定岗位或任务，默认建议：
 
 ```text
-TLLM-P0-002：建立 paged/contiguous synthetic oracle
+先复核已有证据与未合入 PR，再选择剩余验收：
+PSRV-P0-001 的 PR #23 review → PSRV-P0-002 有界背压（两者不自动合并或开工）
 ```
 
 原因：
 
-- 不依赖真实模型即可先做大部分工作；
-- 为 direct paged attention 提供独立 correctness 门禁；
-- 同时服务 Runtime 和 Serving 主线；
-- 风险低于直接写 L4 kernel。
+- direct oracle、kernel 和集成已存在，旧默认任务容易重复开发；
+- PR #23 在 2026-10-04 为 OPEN，已有主动取消实现，先审查当前差异；
+- 无界 SSE/fan-in 队列仍存在，关闭失败回收与背压比增加新功能更优先。
 
 替代入口：
 
@@ -231,12 +234,12 @@ blocked:
 
 ```yaml
 local_read: true
-local_edit_in_scope: true
+local_edit_in_scope: only_after_explicit_can_change_code
 local_build_test: true
 local_gpu: only_if_available_and_free
-git_commit: true
-git_push: true
-create_pr: true
+git_commit: only_after_explicit_approval
+git_push: only_after_explicit_approval
+create_pr: only_after_explicit_approval
 merge_pr: false
 paid_gpu: false
 download_restricted_model: false
@@ -297,7 +300,7 @@ task ID
 6. affected suite；
 7. GPU/sanitizer（若需要且可用）；
 8. review diff；
-9. commit、push、PR；
+9. 授权涵盖时才 commit、push、PR，否则保留本地 diff；
 10. 记录 evidence 和 handoff。
 
 禁止：
@@ -452,16 +455,17 @@ CPU、GPU correctness、sanitizer、performance 分开报告。
 最后按 AGENT_EXECUTION_GUIDE.md 第 15 节交接。
 ```
 
-## 16. 下一步唯一建议
+## 16. 下一步选择
 
 如果用户没有新的岗位选择、外部面试反馈或紧急 CI，下一位 Agent 不应继续写建议文档。
 
 执行：
 
 ```text
-审计 TLLM-P0-002 当前状态
-  → 缺失时完成 independent paged/contiguous synthetic oracle
-  → 通过后进入 direct paged attention 的 G0-G8 设计
+先看本人闭卷诊断最低分和当前 PR/证据
+  → 综合/Serving：review PR #23 → 剩余有界背压与失败回收
+  → Runtime：复核已有 direct/split-KV → 端到端配对 A/B
+  → Kernel：cuflash workspace/stream 安全
 ```
 
-这是当前从“文档齐全”进入“旗舰技术证据”的最短路径。
+一次选一条；当前问题改变时可以替换任务，保留已有有效证据，不从零重写已实现阶段。

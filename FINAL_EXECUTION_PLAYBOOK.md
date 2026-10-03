@@ -3,6 +3,9 @@
 > 目标：在规划和高能力 Agent 支持结束后，仍能依靠当前仓库、低成本模型和本人实践，
 > 持续完成技术实现、实验、面试和求职闭环。
 
+2026-10-04 校准：此手册保留选择方法，不新增总计划。当前六周日程见
+[ROADMAP.md](ROADMAP.md)；历史任务卡必须结合现有实现、PR 和 raw 重新选择。
+
 ## 1. 现在最重要的判断
 
 ### 1.1 规划层已经完成
@@ -47,9 +50,9 @@ CUDA 基础
 
 默认优先级：
 
-1. **Runtime/综合方向**：`tiny-llm` direct paged decode attention。
+1. **Runtime/综合方向**：已有 direct/split-KV 的当前 GPU/集成复核、端到端配对 A/B；不从零重做。
 2. **Kernel 方向**：`cuflash` decode workspace/stream safety。
-3. **Serving 方向**：`paged-serving` cancellation + bounded backpressure。
+3. **Serving 方向**：先 review 主动取消 PR #23，再关闭 bounded backpressure 与失败回收。
 
 三条路径只能选一条作为当前深改造。其余保持 backlog，不同时进入 production
 implementation。
@@ -141,12 +144,10 @@ CUF-P0-001
 默认推荐路线：
 
 ```text
-TLLM-P0-001
-  → TLLM-P0-002
-  → TLLM-DPA 设计评审
-  → TLLM-P0-004
-  → TLLM-P0-005
-  → TLLM-P1-001
+复核已有 TLLM-P0-002/004/005 与 split-KV
+  → 当前 GPU/Sanitizer 门禁
+  → TLLM-P0-001 第二模型证据
+  → TLLM-P1-001 剩余端到端配对 A/B
   → PSRV-P1-002
 ```
 
@@ -172,7 +173,7 @@ TLLM-P0-001
 
 ```text
 PSRV-P0-004
-  → PSRV-P0-001 设计与实现
+  → PSRV-P0-001 PR #23 review（OPEN 不等于已合入）
   → PSRV-P0-002 设计与实现
   → PSRV-P0-003
   → PSRV-P1-001
@@ -213,7 +214,7 @@ PSRV-P0-004
 
 完成一个“设计 + oracle + 最小实现”：
 
-- Runtime：TLLM-P0-002 + DPA design + 最小 kernel；
+- Runtime：已有 oracle/DPA/split-KV 的门禁复核 + 一个配对端到端实验；
 - Kernel：CUF-P0-001/002/003；
 - Serving：PSRV-P0-001/002/003。
 
@@ -249,12 +250,13 @@ design
 | 4 | PSRV-P0-004 | 真实验证 loadgen 的网络失败分类 |
 | 5 | CUDA-P0-002 | 建立 ragged/NaN/Inf correctness |
 | 6 | TRI-P0-001 | 冻结 custom-op eager/fake 契约 |
-| 7 | TLLM-P0-002 | 建立 direct paged 的 independent oracle |
+| 7 | TLLM-P0-002 | 复核已有 oracle，不重复实现 |
 | 8 | CUF-P0-001 | 冻结 workspace/stream 设计 |
-| 9 | PSRV-P0-001 | 冻结并实现主动取消 |
+| 9 | PSRV-P0-001 | review 已有 PR #23，验证失败与回收，不自动合并 |
 | 10 | KVT-P0-002 | 建立 schema v2 provenance |
 
-这些任务完成后，再根据目标岗位进入一个深改造。
+此表是候选池，不是必须逐个重做的清单；代码与证据优先于历史顺序。本人 W7 诊断
+最低分与岗位要求决定下一任务，已通过且仍有效的项直接复用。
 
 ## 6. 每个任务的标准循环
 

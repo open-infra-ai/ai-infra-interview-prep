@@ -3,6 +3,17 @@
 > 12 周 AI Infra 转行准备：目标岗位、能力矩阵、周计划、面试与求职执行。
 > **执行周期：2026-08-24 ～ 2026-11-15**（默认 24h/周，附 12h/18h 缩放档）。
 
+## 从今天开始（2026-10-04 校准）
+
+当前进入 W6 末尾，下一完整周是 [W7](weekly/week-07.md)。技术成果已推进到
+direct paged/split-KV kernel 与正式 Serving 结果；个人掌握程度仍需闭卷验证，
+仓库 checkbox 的零完成记录不等于本人零学习。W1–W6 不补造完成状态。
+
+剩余六周采用已有 weekly 文件滚动执行：可信度与本人诊断 → 取消/背压 → profiler
+与配对实验 → 一个上游框架 → Linux/C++/系统设计 → 答辩冻结。24h/周是暂定预算，
+不是已确认可用时间；[study-plan.md](study-plan.md) 说明怎么缩放和按短板调换。
+先练 [面试矩阵中的三张答辩牌](INTERVIEW_MATRIX.md#三张答辩牌)，让原始负结果成为判断力证据。
+
 ## 定位与职责边界
 
 - 本仓库（公开）：转行计划、学习 TODO、能力矩阵、项目策略、脱敏简历、面试与
@@ -60,17 +71,18 @@
 | [第 4 周](weekly/week-04.md) | Triton、PyTorch 自定义算子 | 09-14 ~ 09-20 | ⬜ |
 | [第 5 周](weekly/week-05.md) | Transformer 推理、量化、模型加载 | 09-21 ~ 09-27 | ⬜ |
 | [第 6 周](weekly/week-06.md) | KV Cache、Decode、CUDA Graph、性能指标 | 09-28 ~ 10-04 | ⬜ |
-| [第 7 周](weekly/week-07.md) | Paged KV、Continuous Batching、调度 | 10-05 ~ 10-11 | ⬜ |
-| [第 8 周](weekly/week-08.md) | HTTP/SSE、压测、可观测性、Linux 调优 | 10-12 ~ 10-18 | ⬜ |
-| [第 9 周](weekly/week-09.md) | NCCL、并行策略、通信/计算重叠 | 10-19 ~ 10-25 | ⬜ |
-| [第 10 周](weekly/week-10.md) | 项目证据包、简历项目、GitHub 展示 | 10-26 ~ 11-01 | ⬜ |
+| [第 7 周](weekly/week-07.md) | 可信度整改、闭卷诊断、Paged KV 答辩 | 10-05 ~ 10-11 | ⬜ |
+| [第 8 周](weekly/week-08.md) | 取消、背压、失败回收与 Serving | 10-12 ~ 10-18 | ⬜ |
+| [第 9 周](weekly/week-09.md) | Profiler、配对实验与负结果归因 | 10-19 ~ 10-25 | ⬜ |
+| [第 10 周](weekly/week-10.md) | 一个上游框架、证据包与简历 | 10-26 ~ 11-01 | ⬜ |
 | [第 11 周](weekly/week-11.md) | CUDA/C++/系统设计模拟面试 | 11-02 ~ 11-08 | ⬜ |
 | [第 12 周](weekly/week-12.md) | 查漏补缺、投递、复盘 | 11-09 ~ 11-15 | ⬜ |
 
 ## 执行入口（每周循环）
 
 **周一启动**
-1. 打开本周 [weekly/week-01.md](weekly/week-01.md)（当前周）→ 按时间预算规划日程。
+
+1. 从上表打开日期对应的周文件；2026-10-05 从 [W7](weekly/week-07.md) 开始。
 2. 相关文档：[SKILL_MATRIX.md](SKILL_MATRIX.md)（自评基线）、[INTERVIEW_MATRIX.md](INTERVIEW_MATRIX.md)（本周面试题）。
 
 **执行中**
@@ -92,7 +104,7 @@ make progress       # 只看进度统计
 make progress-write # 统计并写回 progress-tracker / frontmatter / README 状态
 ```
 
-## 核心事实（2026-08-19 审计）
+## 核心事实（2026-10-04 复核）
 
 - 目标：GPU Kernel / LLM Inference Performance Engineer（主）、Serving（次）、编译器（可选）。
 - 推理加速面试旗舰是 **tiny-llm**；`cuflash` 证明 kernel 深度，`paged-serving`
@@ -102,3 +114,7 @@ make progress-write # 统计并写回 progress-tracker / frontmatter / README �
 - P2 大仓（vllm/sglang/TensorRT-LLM/triton/flashinfer/flash-attention/LightLLM）只做
   "五个一"目标导向阅读，不做全仓通读。
 - 多 GPU 相关内容一律标注理论学习，不伪造实验数据。
+- direct paged/split-KV 已实现，默认 legacy、split 关闭；9 月 kernel 结果不等于
+  Serving 加速。主动取消 PR #23 仍 OPEN，先 review，不重复实现。
+- [BASELINE.md](BASELINE.md) 区分工程证据和本人能力；[SKILL_MATRIX.md](SKILL_MATRIX.md)
+  的旧等级是待复测自评，不因 Agent 完成代码自动涨级。

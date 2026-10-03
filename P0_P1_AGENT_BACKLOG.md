@@ -254,11 +254,14 @@ GPU workflow；但是“测试命令退出 0”仍可能包含 GPU case skip，r
 
 ### TRI-P0-003：统一 timing 口径并保留 raw samples
 
+状态（2026-10-04）：部分完成。两投影 FLOPs/bytes、README 墙钟均值与正确性失败
+拒绝计时已有本地改动和 CPU 回归；逐次 raw sample/schema 仍未实现，不能标整项完成。
+
 - **复杂度**：L2。
 - **目标**：`measure_latency`/`measure_metrics` 保留 per-iteration samples，明确 mean、
   median/p50、p95 和同步边界，消除文档与实现不一致。
 - **当前证据**：`trifuse/performance.py` 当前按整段 wall clock 求平均；
-  `trifuse/benchmark/report.py` 和 README 使用的统计描述不完全一致。
+  README 已按均值同步；`trifuse/benchmark/report.py` 仍只保存聚合结果。
 - **前置与范围**：先冻结计时 schema；允许改 performance、benchmark report 和测试；
   禁止只保存聚合值，禁止混用 CPU wall clock 与 CUDA event 后不标注。
 - **验收**：warmup 不进入 samples；每次测量有明确同步；JSON 包含 raw、count、mean、
@@ -465,9 +468,9 @@ GPU workflow；但是“测试命令退出 0”仍可能包含 GPU case skip，r
 
 ## 6. `tiny-llm`
 
-当前边界：已有 GGUF/量化、Tokenizer、Transformer、连续与 paged KV、CUDA Graph、
-W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather 到连续 scratch，
-最后调用连续 attention；因此它是分页 KV 控制面，不是 direct PagedAttention。
+当前边界（2026-10-04）：已有 GGUF/量化、Tokenizer、Transformer、连续与 paged KV、
+CUDA Graph、W8A16、C ABI、direct paged decode 和 split-KV。默认 legacy、split 关闭，
+prefill 保留 gather。9/14–9/15 是 kernel 结果，不证明模型或 Serving 加速。
 
 ### TLLM-P0-001：建立 GGUF/量化兼容性和第二模型 evidence
 
@@ -487,11 +490,14 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### TLLM-P0-002：建立 paged 与 contiguous 的 synthetic oracle
 
+状态：已有实现，复核剩余验收，不从零新增 oracle。当前入口是
+`tests/paged_attention_oracle.h`、`tests/test_paged_oracle.cpp`、`tests/test_paged_direct.cpp`；
+持续 GPU/Sanitizer 门禁是否覆盖原任务矩阵仍需确认，不据文件存在标整项完成。
+
 - **复杂度**：L3。
 - **目标**：新增不依赖外部 GGUF 的 layer/kernel 差分，冻结 direct paged attention 的
   不可变 correctness oracle。
-- **当前证据**：`kernels/paged_kv.cu` 主要证明 scatter/gather；`src/transformer.cpp`
-  的 `attentionPaged` 再调用连续 attention；端到端 FFI 差分依赖真实模型。
+- **当前证据**：上述独立 oracle 与 direct 差分；端到端真实模型证据和 GPU 门禁分别复核。
 - **前置与范围**：只做独立 reference、fixture、测试 API 最小 seam；禁止先写 direct
   kernel，禁止 reference 调用生产 paged helper。
 - **验收**：覆盖 block_size、跨块尾部、GQA/MQA、RoPE position、visible length、
@@ -519,11 +525,13 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### TLLM-P0-004：实现 direct paged decode attention kernel
 
+状态：实现与 kernel A/B 已存在；复核 `kernels/attention.cu::attention_decode_paged`、
+`tests/test_paged_direct.cpp` 和 9/14 DPA raw。后续只补尚缺验收，禁止重复重写 kernel。
+
 - **复杂度**：L4。
 - **目标**：kernel 直接读取物理 K/V pool 与 block table，单 token decode 不再 gather
   完整可见 KV 到连续 scratch。
-- **当前证据**：`kernels/attention.cu::attention_decode` 只接连续 K/V；
-  `kernels/paged_kv.cu` 只负责 scatter/gather。
+- **当前证据**：`kernels/attention.cu::attention_decode_paged` 直接消费 block table/pool，已有独立差分。
 - **前置与范围**：必须先通过 direct-paged design package 和 TLLM-P0-002；第一 PR
   只允许 kernel/header/tests/benchmark seam，禁止同时改 FFI 与 serving。
 - **验收**：API、layout、GQA 映射、block lookup、tail、online softmax、dtype/accumulation、
@@ -534,6 +542,10 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 - **下游**：TLLM-P0-005、TLLM-P1-001。
 
 ### TLLM-P0-005：将 direct decode 接入 Transformer 与 FFI
+
+状态：接入、模式选择和 fallback 已存在，`src/transformer.cpp` 支持
+`TLLM_PAGED_ATTENTION=auto|legacy|direct` 与 `TLLM_ATTN_SPLITKV`；
+`tests/test_ffi_paged_dispatch.cpp` 可定位回归。默认 legacy；只复核缺失验收，不重复接入。
 
 - **复杂度**：L3。
 - **目标**：strategy 1 decode 调用 direct kernel；prefill 暂保留 scatter/gather；
@@ -552,11 +564,15 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### TLLM-P1-001：运行 direct paged 长上下文 A/B
 
+状态：kernel 级已完成两份原始结果，端到端/Serving 配对 A/B 仍待做。
+9/14 DPA 与 9/15 split-KV 的计时可用 `scripts/summarize_dpa.py` 在 CPU 重算；
+历史 profiler 表格不代表原始 profiler 包已经归档。
+
 - **复杂度**：L3。
 - **目标**：比较 legacy gather+continuous attention、direct paged 和 contiguous，
   分别报告 kernel、scratch bytes 和可行的 FFI/serving 影响。
-- **当前证据**：`src/kernel_bench.cpp` 目前以连续 attention 和较短 sequence 为主；
-  CUDA Graph 历史数据不能回答 direct paged 收益。
+- **当前证据**：`src/kernel_bench.cpp --dpa-bench` 支持三路与 split 扫描，已覆盖
+  visible 8–2048；CUDA Graph 历史数据不能替代 direct 的端到端配对实验。
 - **前置与范围**：依赖 TLLM-P0-005 和 GPU gate；默认只改 benchmark/schema/docs；
   禁止 benchmark Agent 修改 kernel。
 - **验收**：shape 覆盖 block boundary 和长上下文；三路同输入/同输出 contract；
@@ -573,6 +589,11 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 网络失败回归、真实 backend 持续门禁和三引擎公平矩阵。
 
 ### PSRV-P0-001：实现请求所有权驱动的主动取消
+
+状态（2026-10-04）：[PR #23](https://github.com/open-infra-ai/paged-serving/pull/23)
+为 OPEN，head `25811e35c2d978f39efd6eb9731dc6fadc9c8a25`，CI check SUCCESS。
+PR 已有 RequestGuard/watch 主动取消；默认分支未合入，先 review/复核，不另写一套，
+不自动 merge。完整失败/回收矩阵仍按下面验收核对。
 
 - **复杂度**：L3。
 - **目标**：consumer 关闭、handler abort、`n>1` 部分准入失败时主动取消所有已准入请求，
