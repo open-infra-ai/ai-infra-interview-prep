@@ -209,9 +209,16 @@ PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
 - `9bd6836` 修复异常 completion 被算成功的实际缺陷：已知字段类型/重复键、非法
   usage、单候选与 DONE 前的 completion 有回归保护，合法空输出、usage-only 和扩展
   字段仍通过。tokenizer fallback 的部分输出计数不能把失败改成成功。29 个 loadgen
-  测试和 6 个 CLI 用例连续 10 轮通过（80 个子进程），当前默认套件实际 276 个测试、
+  测试和 6 个 CLI 用例连续 10 轮通过（80 个子进程），该批默认套件实际 276 个测试、
   17 个 doc tests 与 1 个明确 ignored。不重判历史 raw，不称为 GPU、多引擎实测或
   完整协议认证；独立审阅与 OBS 具体方案批准仍待完成，后续任务顺序不变。
+- `92485dd` 只新增 CPU 真实 TCP 生命周期测试与笔记，未改生产实现。覆盖首文本后、
+  无文本 decode、unary 头前断连及 shutdown；先观察 HTTP owner 退出，再放行同步
+  在途步骤并验证取消/逻辑回收/释放通知。前三项在原实例成功服务四个探针，shutdown
+  有一个 error/DONE、readyz=503。四项连续 50 轮通过，当前默认套件实际 280 个测试、
+  17 个 doc tests 与 1 个明确 ignored。测试许可用 block_in_place 交还 worker，不是
+  生产 offload；CPU 释放 probe 不等于原生登记或 GPU 显存回收。OBS、真实 GPU HTTP、
+  lane 的批准/验收仍待办，不自动合并，不凭这组 CPU 证据关闭 P1-002。
 
 替代入口：
 

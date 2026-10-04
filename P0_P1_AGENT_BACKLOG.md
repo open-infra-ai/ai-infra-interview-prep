@@ -598,17 +598,31 @@ prefill 保留 gather。9/14–9/15 是 kernel 结果，不证明模型或 Servi
 重复 10 轮通过。默认分支和 PR #23 未改动，不自动 merge，不另写取消实现；
 真实 CUDA backend / HF / 网络压力仍按下面验收补足。
 
+CPU 真实网络回归
+[`92485dd`](https://github.com/open-infra-ai/paged-serving/commit/92485dd952e9e75bd0b6cea899e0b126694dbb5e)
+只新增测试与笔记，未改生产算法：四个真实 HTTP/1.1 socket 场景覆盖首文本后/无文本
+decode 断连、unary 响应头前断连和 shutdown 的 SSE 终态。HTTP inflight 先归零，
+再放行在途同步步骤；取消=1、failed=0、逻辑 KV/active=0，释放通知恰好一次。
+前三个场景均在原实例成功服务四个后续探针，不声称同时占满四槽；shutdown 发出
+一个 error、一个 DONE、无 usage，readyz=503。四个用例连续 50 轮通过，完整默认
+套件实际 280 个测试加 17 个 doc tests，真实 tokenizer 明确 1 个 ignored。
+[测试时序与限制](https://github.com/open-infra-ai/paged-serving/blob/92485dd952e9e75bd0b6cea899e0b126694dbb5e/.agents/notes/implemented/feature/2026-10-04-bounded-events-and-cancellation.md)
+明确受控 CPU probe 不等于原生登记/显存 oracle；许可等待的 runtime 交接仅属于
+夹具。不能以这组测试替代 OBS 或真实 GPU HTTP 验收，也不是独立 review/生产负载
+调优完成；P1-002 的具体设计批准仍待完成。
+
 - **复杂度**：L3。
 - **目标**：consumer 关闭、handler abort、`n>1` 部分准入失败时主动取消所有已准入请求，
   不等待下一次非空 chunk send failure。
 - **当前证据**：`src/server.rs` 的 submit/engine loop/stream response，
   `src/engine.rs::cancel_request`、`src/scheduler.rs::cancel_by_request_id` 和现有断连测试。
+  `tests/server_tcp_lifecycle.rs` 另提供 CPU 实际 socket 证据，区别于 Router oneshot。
 - **前置与范围**：先完成取消状态机设计；允许改 server、最小 engine/scheduler 接口和
   integration tests；禁止新建第二套 request state machine。
 - **验收**：pending/prefill/decode、HF 暂无文本、unary abort、SSE disconnect、n>1
   partial admission 全覆盖；每条路径 request slot、KV block、backend sequence 回基线。
 - **命令**：server integration cancel filters、engine/scheduler resource tests、
-  `cargo clippy --all-targets -- -D warnings`。
+  `cargo test --locked --test server_tcp_lifecycle`、`cargo clippy --all-targets -- -D warnings`。
 - **证据/停止**：必须证明 exactly-once terminal/release；若 cancellation 与 response
   ownership 无法线性化，停在设计评审。
 - **下游**：PSRV-P0-002/003、PSRV-P1-003。
