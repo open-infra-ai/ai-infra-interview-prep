@@ -115,6 +115,8 @@ make progress-write # 统计并写回 progress-tracker / frontmatter / README �
   "五个一"目标导向阅读，不做全仓通读。
 - 多 GPU 相关内容一律标注理论学习，不伪造实验数据。
 - direct paged/split-KV 已实现，默认 legacy、split 关闭；9 月 kernel 结果不等于
-  Serving 加速。主动取消 PR #23 仍 OPEN，先 review，不重复实现。
+  Serving 加速。取消/背压/指标与证据门禁已由
+  [PR #24](https://github.com/open-infra-ai/paged-serving/pull/24) 经独立代理审阅后合入默认
+  分支；下一步评审原生登记 OBS，不重复实现，也不自动证明 GPU 回收。
 - [BASELINE.md](BASELINE.md) 区分工程证据和本人能力；[SKILL_MATRIX.md](SKILL_MATRIX.md)
   的旧等级是待复测自评，不因 Agent 完成代码自动涨级。

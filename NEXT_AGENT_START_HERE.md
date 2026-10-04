@@ -167,9 +167,9 @@ git -C <repo> status --short
 若用户没有指定岗位或任务，默认建议：
 
 ```text
-先复核已推送的整改分支与默认分支差异，再选择剩余验收：
-PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
-  → 独立评审 → PSRV-P1-002 真实后端非 skip 门禁设计评审 / 真实 CUDA 回收
+先复核已合入 PR #24 的 commit 和现有证据，再选择剩余验收：
+PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据已完成代理审阅与集成
+  → PSRV-P1-002/OBS 具体设计评审 → 原生登记 / 真实 GPU HTTP 回收
 ```
 
 原因：
@@ -182,7 +182,7 @@ PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
   264 个默认测试与 17 个 doc tests 本地通过，不重写已验收部分；
   不把 loadgen 夹具或 Router oneshot 当作真实 CUDA/生产服务端回收证明。
 - `a7fef1e` 的 36 个离线测试与 66 个存量 run 重验支持结果语义门禁；未收敛仍保留。
-  独立审阅与默认分支集成未完成；下一步先评审，再进入真实后端非 skip 门禁设计。
+  独立审阅与默认分支集成已由 PR #24 完成；真实 GPU 门禁仍按具体设计审批执行。
 - `b83dcf8` 已局部修复真实测试假绿，并归档五个 GPU 用例和 30 条 tokenizer fixture
   的实际执行输出；完整 feature 套件 272 个测试与 17 个 doc tests、零忽略。
   该批默认套件为 263 个实际执行、1 个 ignored 与 17 个 doc tests；历史 264 个 passed
@@ -198,7 +198,7 @@ PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
   66 个历史 run 重验通过，结果 schema/收敛规则不变。除非能复现新缺陷，不重新扩建
   P1-001。后续进入
   [P1-002 执行切片](P0_P1_AGENT_BACKLOG.md#psrv-p1-002-后续切片先观察再扩实验)，
-  顺序为独立审阅 → 原生登记 OBS → 真实 HTTP → 严格 GPU lane → 遥测/配对实验。
+  审阅和集成已完成；后续为原生登记 OBS → 真实 HTTP → 严格 GPU lane → 遥测/配对实验。
   选择 OBS 时必须先读取任务卡链接的 G0-G8 提案；它是 `proposed / pending`，需要用户
   明确批准并留下评审结论才能实现双仓 ABI，泛泛的“继续”不能代替对具体设计的批准。
 - `92a2cf5` 修复客户端正文总预算到期误记为 stream_error 的实际缺陷；21 个 loadgen
@@ -211,26 +211,32 @@ PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
   字段仍通过。tokenizer fallback 的部分输出计数不能把失败改成成功。29 个 loadgen
   测试和 6 个 CLI 用例连续 10 轮通过（80 个子进程），该批默认套件实际 276 个测试、
   17 个 doc tests 与 1 个明确 ignored。不重判历史 raw，不称为 GPU、多引擎实测或
-  完整协议认证；独立审阅与 OBS 具体方案批准仍待完成，后续任务顺序不变。
+  完整协议认证；OBS 具体方案批准仍待完成，审阅与集成以 PR #24 状态为准。
 - `92485dd` 只新增 CPU 真实 TCP 生命周期测试与笔记，未改生产实现。覆盖首文本后、
   无文本 decode、unary 头前断连及 shutdown；先观察 HTTP owner 退出，再放行同步
   在途步骤并验证取消/逻辑回收/释放通知。前三项在原实例成功服务四个探针，shutdown
-  有一个 error/DONE、readyz=503。四项连续 50 轮通过，当前默认套件实际 280 个测试、
+  有一个 error/DONE、readyz=503。四项连续 50 轮通过，该提交默认套件实际 280 个测试、
   17 个 doc tests 与 1 个明确 ignored。测试许可用 block_in_place 交还 worker，不是
   生产 offload；CPU 释放 probe 不等于原生登记或 GPU 显存回收。OBS、真实 GPU HTTP、
-  lane 的批准/验收仍待办，不自动合并，不凭这组 CPU 证据关闭 P1-002。
+  lane 的批准/验收仍待办，不凭这组 CPU 证据关闭 P1-002。
+- 当前集成（2026-10-05）：用户授权多代理与直接合并，四位独立只读代理审阅后，
+  六项发现经修复复审；Serving PR #24 合入默认分支（merge e60a315，head 30c16f4）。
+  `23338ad` 修复文本封口先于 Done 发布的竞态，确定性回归先失败后通过；最新默认
+  套件实际 282 个测试加 17 个 doc tests、1 个明确 ignored，40 项结果审计通过。
+  下一步按任务卡评审 OBS 具体提案，不重新实现取消/背压/压测门禁；旧 PR #23 保留。
 
 替代入口：
 
 | 用户目标 | 首选任务 |
 |----------|----------|
 | CUDA/Kernel | `CUF-P0-001`，先冻结 workspace/stream lifecycle |
-| Serving | 独立审阅整改分支，然后评审 `PSRV-P1-002/OBS` 的具体提案；执行切片是唯一后续任务入口 |
+| Serving | 评审 `PSRV-P1-002/OBS` 具体提案；已完成的独立代理审阅与默认分支集成不重复执行 |
 | 纯 CPU/无 GPU | `KVT-P0-004` 或 `TRI-P0-001` |
 | 修证据真实性 | `CUDA-P0-001` 或 `TRI-P1-008` |
 
 若首选任务已经实现，先在当前授权工作分支定位 commit 和验收证据，再选择其直接下游。
-默认分支未合入单列为集成验收，不触发重复开发；没有额外授权不得自动 merge。
+新批次的默认分支集成单列验收，不触发重复开发。已授权批次在固定 head 审阅与
+适用 CI 全绿后可逐仓合并；新 ABI/实验设计仍需各自明确批准。
 继续遵循原有范围和验证要求，不能因为文件存在就判定完成。
 
 ### Step 6：确定复杂度
@@ -507,7 +513,7 @@ CPU、GPU correctness、sanitizer、performance 分开报告。
 
 ```text
 先看本人闭卷诊断最低分和当前 PR/证据
-  → 综合/Serving：独立评审整改分支 → 真实后端门禁设计 / CUDA 与服务端网络回收
+  → 综合/Serving：复核已合入整改 → OBS 具体设计评审 / 真实 GPU HTTP 回收
   → Runtime：复核已有 direct/split-KV → 端到端配对 A/B
   → Kernel：cuflash workspace/stream 安全
 ```
