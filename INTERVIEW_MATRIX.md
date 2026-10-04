@@ -151,17 +151,25 @@ W3 起每周补充当周主题的 3–5 题并自评。此文件是索引 + 示�
   独立 oneshot 让失败终态不被满队列阻挡，成功终态先排空文本。unary 不订阅文本，
   多候选直接拉取合并；算完最后 token 不等于完整交付。取消使用 typed reason，
   引擎按候选计数，HTTP errors 共享去重标记；正常退出不等于计算故障。
+  逻辑 KV 归零只是必要检查，必须继续验证同一后端能否再服务；连续 KV 槽位与
+  分页序列登记的生命周期不同，满容量复用也不能独立认证后者。
 - **追问树**：慢客户端怎样不阻塞全局 worker？→ 满队列丢 token 是否合法？→ 取消与 EOS
   同时到达怎么办？→ 最后一步算完但文本投递溢出，哪个 counter 仍增加？
   → `n=3` 同时失败，为何 HTTP errors 只能加一？→ body 没读也能记录什么错误？
   → 为什么取消返回 500，却不增加 errors，监控查询要怎样解释？
   → 谁保证 block/metric 回基线？→ 为什么网络 shutdown 仍不能声称固定排空时限？
+  → 为什么利用率已经为零，连续后端下一批仍可能耗尽？→ 故意拦截释放通知，
+  为何分页路径仍能成功？→ 这个反例说明测试覆盖了什么、没有覆盖什么？
 - **代码定位**：`paged-serving/src/server.rs`；[PR #23](https://github.com/open-infra-ai/paged-serving/pull/23)
   的 RequestGuard/watch，与默认分支对比。
 - **实验证据**：PR #23 仍 OPEN；[整改提交](https://github.com/open-infra-ai/paged-serving/commit/3039093ddc2fb6ddcab9508e4024bc84a61816c7)
   的 260 个默认测试与 17 个 doc tests 本地通过，服务/HTTP 回归重复 10 轮。
   [指标单位表](https://github.com/open-infra-ai/paged-serving/blob/3039093ddc2fb6ddcab9508e4024bc84a61816c7/.agents/notes/implemented/bug-fix/2026-10-04-typed-cancellation-and-metrics.md)
-  区分候选 cancelled 与 HTTP errors。默认分支未合入，真实 TCP 故障和 CUDA 回收未验收。
+  区分候选 cancelled 与 HTTP errors。
+  [真实 GPU 生命周期反例](https://github.com/open-infra-ai/paged-serving/blob/4b095567f70ae5b835826e5897a9a42c7ac53b8e/.agents/notes/implemented/testing/2026-10-04-real-backend-terminal-reuse.md)
+  验证 prefill/decode 返回后取消、越界失败与同实例再服务，记录释放通知缺失对照的
+  策略差异；它不证明真实 HTTP 断连、kernel 抢占、分页登记或显存字节回收。
+  默认分支未合入，真实 TCP 故障与服务端 CUDA 取消回收仍待验收。
 - **评分/自评**：B 需说清无新 token 场景；A 需推演部分准入失败与资源回收。__待本人复测__。
 
 ## Q12（P1·工程）为什么 stable CI 绿不能证明 MSRV？（W7）
