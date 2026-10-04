@@ -185,7 +185,7 @@ PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
   独立审阅与默认分支集成未完成；下一步先评审，再进入真实后端非 skip 门禁设计。
 - `b83dcf8` 已局部修复真实测试假绿，并归档五个 GPU 用例和 30 条 tokenizer fixture
   的实际执行输出；完整 feature 套件 272 个测试与 17 个 doc tests、零忽略。
-  默认套件当前为 263 个实际执行、1 个 ignored 与 17 个 doc tests；历史 264 个 passed
+  该批默认套件为 263 个实际执行、1 个 ignored 与 17 个 doc tests；历史 264 个 passed
   含缺输入的直接返回，不能全部算实际验证。先复核
   [P1-002 当前状态](P0_P1_AGENT_BACKLOG.md#psrv-p1-002建立真实-tiny-llm-backend-非-skip-门禁)，
   不重复修复、不把局部测试整改升级成 L3 审批或持续 GPU CI 已完成。
@@ -201,6 +201,11 @@ PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
   顺序为独立审阅 → 原生登记 OBS → 真实 HTTP → 严格 GPU lane → 遥测/配对实验。
   选择 OBS 时必须先读取任务卡链接的 G0-G8 提案；它是 `proposed / pending`，需要用户
   明确批准并留下评审结论才能实现双仓 ABI，泛泛的“继续”不能代替对具体设计的批准。
+- `92a2cf5` 修复客户端正文总预算到期误记为 stream_error 的实际缺陷；21 个 loadgen
+  测试和 5 个 CLI 用例连续 10 轮通过，当前默认套件为 267 个实际执行、17 个 doc
+  tests 与 1 个明确 ignored。原始部分输出保留，失败不进入成功性能；不重写旧错误
+  计数，不当作服务端取消或 GPU 回收。后续任务顺序不变，OBS 仍待具体批准；本项
+  没有修改 C ABI。需要新增 loadgen 修复时先复现缺陷，不按旧清单从零重建。
 
 替代入口：
 

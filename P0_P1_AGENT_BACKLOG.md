@@ -678,11 +678,22 @@ MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
 默认分支未合入，历史结果不回填新字段，详见
 [CLI 决策与兼容性](https://github.com/open-infra-ai/paged-serving/blob/69dafbe9e4f726fa8f5b472666e4679945b516b3/.agents/notes/implemented/testing/2026-10-04-loadgen-cli-reproducibility.md)。
 
+正文超时分类修复
+[`92a2cf5`](https://github.com/open-infra-ai/paged-serving/commit/92a2cf50436df166616accc2210c2b580f1a20df)
+已有非 skip 的本地 TCP 与真实二进制验收：响应头后/部分文本后的总预算到期记为
+timeout，不混入 stream_error；正文截断和含 backend timeout 的 SSE error 消息仍是
+stream_error。部分 chunk/usage/finish_reason 保留在 raw，但六个失败请求不进入成功
+延迟样本和 token total，tok/s 为 null。CLI 退出 0 表示完整采集负结果，不表示请求成功。
+21 个 loadgen 测试、5 个 CLI 用例连续 10 轮通过（70 个子进程）；完整默认套件实际
+267 个测试加 17 个 doc tests，真实 tokenizer 为 1 个 ignored。分类和限制见
+[技术笔记](https://github.com/open-infra-ai/paged-serving/blob/92a2cf50436df166616accc2210c2b580f1a20df/.agents/notes/implemented/testing/2026-09-15-real-http-sse-regression.md)。
+没有更改请求预算、调度或 C ABI；不是服务端超时取消或 GPU 回收验收。
+
 - **复杂度**：L2。
 - **目标**：用本地可控 HTTP server 验证 `run_request`、closed/Poisson 和 summary，
   覆盖全部错误分类。
 - **当前证据**（2026-10-04 复核）：`src/bin/loadgen.rs` 已有一次性本地 TCP server，
-  11 个 `run_request_*` 异步测试覆盖成功 usage、CRLF、跨 TCP 写分割 UTF-8、
+  初次验收的 11 个 `run_request_*` 异步测试覆盖成功 usage、CRLF、跨 TCP 写分割 UTF-8、
   HTTP 错误状态、connection refused、timeout、非法 JSON/UTF-8、error frame、
   missing DONE 与 usage 缺失；包含在第三批完整 cargo test 中。不能按旧任务描述
   从零重建临时 server；seeded Poisson 间隔、warmup 排除、token coverage 和 summary
@@ -763,7 +774,8 @@ MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
   路径和静态库来源按技术仓 README 与执行笔记复核。
 - **剩余验收**：完整 GPU lane 的 G0-G8 设计审批、runner/模型/artifact 提供方式与
   持续运行证据；独立审阅、默认分支集成和真实 HTTP 取消回收分别记录，不自动合并。
-  分页序列登记的独立观察与释放验证仍待设计，不将“利用率归零且可复用”当成全部回收。
+  分页序列登记观察已有下方 OBS 提案，尚待批准与实现，不将“利用率归零且可复用”
+  当成全部回收。
   Hello 仅匹配历史全序列 oracle，数学请求只检查公共前缀；不能称本次独立 llama.cpp
   对照，也不能凭前缀断言将分歧归因于量化。
 - **证据/停止**：无 GPU/合法模型/artifact 时 blocked；ABI 不匹配立即联合评审两仓。
