@@ -178,10 +178,16 @@ W3 起每周补充当周主题的 3–5 题并自评。此文件是索引 + 示�
 
 - **答案要点**：多请求准入不代表 GPU 计算融合；closed-loop 会反馈减速，Poisson 到达
   暴露排队/过载。429、失败和 token coverage 都要保留，未收敛不写稳定容量。
+  固定 seed 只固定同一二进制的计划负载；预热不能推进测量 RNG 或改变测量 prompt。
+  绝对 deadline 会暴露调度迟到后的集中发压，计划时间、客户端 dispatch 和服务端到达
+  是三个不同量，不能把目标 rate 当成实际网络到达率。
 - **追问树**：coordinated omission？→ 先测哪段时间线？→ 怎样区分 CPU、GPU 和排队瓶颈？
   → 未配对的两包数据为什么不能算优化 speedup？
+  → 为何同 seed 还会受预热影响？→ 相对 sleep 如何积累漂移？→ 迟到后应补发还是丢请求？
 - **代码定位**：paged-serving `src/bin/loadgen.rs`、Serving methodology 与 9/7 原始请求。
 - **实验证据**：正式 21-run 报告，不把 c1→c8 的观察外推为所有模型的结论。
+  [CLI 复现证据](https://github.com/open-infra-ai/paged-serving/blob/69dafbe9e4f726fa8f5b472666e4679945b516b3/.agents/notes/implemented/testing/2026-10-04-loadgen-cli-reproducibility.md)
+  验证同 seed 有/无预热的计划一致、输入顺序和落盘口径；不是新的 GPU 性能包。
 - **评分/自评**：B 需区分观察与因果；A 需设计一个单变量配对实验。__待本人复测__。
 
 ## Q14（P0·C++）30 分钟写一个容量守恒的 block allocator（每周）

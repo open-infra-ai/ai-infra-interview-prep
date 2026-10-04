@@ -662,9 +662,21 @@ MSRV 与 stable 检查均通过，head 对应 `3039093`。
   engine metrics tests 和 clippy。
 - **证据/停止**：若 inflight 定义是 handler lifetime 还是 generation lifetime 未决，
   先由 reviewer 选择并更新 HELP 文本。
-- **下游**：优先复核 PSRV-P0-004 的既有真实传输测试并补缺口，再做 PSRV-P1-003/004。
+- **下游**：PSRV-P0-004 的 CLI/真实传输回归已有整改分支证据，继续结果包语义校验与 PSRV-P1-003/004。
 
 ### PSRV-P0-004：为 loadgen 补真实 HTTP/SSE 失败回归
+
+状态（2026-10-04）：整改分支
+[`69dafbe`](https://github.com/open-infra-ai/paged-serving/commit/69dafbe9e4f726fa8f5b472666e4679945b516b3)
+通过 CLI/本地 TCP 验收：4 个新用例启动真实 loadgen 二进制，覆盖 closed/Poisson、
+warmup 排除、固定 seed 计划、原始记录/summary、错误详情、coverage 与自定义路径。
+264 个默认测试与 17 个 doc tests 本地通过；CLI 重复 10 轮、60 个子进程通过。
+[远端 CI](https://github.com/open-infra-ai/paged-serving/actions/runs/37172586197) 的 Rust 1.88
+MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
+测量 RNG 从 seed 重置，测量 prompt 按 measured_index 选择；绝对 deadline 迟到时可能
+集中发压，所以分开记录计划与实际客户端 dispatch，不宣称服务端到达时刻或 GPU 性能。
+默认分支未合入，历史结果不回填新字段，详见
+[CLI 决策与兼容性](https://github.com/open-infra-ai/paged-serving/blob/69dafbe9e4f726fa8f5b472666e4679945b516b3/.agents/notes/implemented/testing/2026-10-04-loadgen-cli-reproducibility.md)。
 
 - **复杂度**：L2。
 - **目标**：用本地可控 HTTP server 验证 `run_request`、closed/Poisson 和 summary，
@@ -674,8 +686,8 @@ MSRV 与 stable 检查均通过，head 对应 `3039093`。
   HTTP 错误状态、connection refused、timeout、非法 JSON/UTF-8、error frame、
   missing DONE 与 usage 缺失；包含在第三批完整 cargo test 中。不能按旧任务描述
   从零重建临时 server；seeded Poisson 间隔、warmup 排除、token coverage 和 summary
-  已有纯函数测试。剩余先审计 closed/Poisson 负载执行到输出文件的端到端覆盖，
-  再决定最小新增用例；不据间隔函数可复现就宣称整条负载路径已验收。
+  已有纯函数测试；负载执行到输出文件的 CLI 回归由 `tests/loadgen_cli.rs` 补齐。
+  不重复开发；剩余是语义 validator、长负载、真实 GPU 与服务端网络回收。
 - **前置与范围**：允许在 loadgen tests 内建临时 server，必要时最小拆出 `src/loadgen.rs`；
   禁止长 sleep、外网依赖或把 chunk count 当 token count。
 - **验收**：LF/CRLF、split UTF-8、invalid JSON、server error、无 `[DONE]`、usage 有/无、
