@@ -689,6 +689,18 @@ stream_error。部分 chunk/usage/finish_reason 保留在 raw，但六个失败�
 [技术笔记](https://github.com/open-infra-ai/paged-serving/blob/92a2cf50436df166616accc2210c2b580f1a20df/.agents/notes/implemented/testing/2026-09-15-real-http-sse-regression.md)。
 没有更改请求预算、调度或 C ABI；不是服务端超时取消或 GPU 回收验收。
 
+异常 completion 成功误判修复
+[`9bd6836`](https://github.com/open-infra-ai/paged-serving/commit/9bd6836b9acee64b8f1dcd02b31c10d29b06763f)
+已有真实 HTTP/CLI 正反例验收：无意义 JSON、非法/重复已知字段、非法 usage、多候选
+和仅 DONE 记为 protocol_error；合法空输出、零 token、usage-only 和扩展字段仍成功。
+tokenizer 对部分文本的诊断计数不能改变失败状态，也不进入成功性能。修复前 6 个
+单请求用例及新增 CLI 用例失败；修复后 29 个 loadgen 测试与 6 个 CLI 用例连续
+10 轮通过（80 个子进程），完整默认套件实际 276 个测试加 17 个 doc tests，真实
+tokenizer 为 1 个明确 ignored。细节与兼容代价见
+[分类笔记](https://github.com/open-infra-ai/paged-serving/blob/9bd6836b9acee64b8f1dcd02b31c10d29b06763f/.agents/notes/implemented/testing/2026-09-15-real-http-sse-regression.md)。
+原始结果、schema、C ABI 和请求预算不变；不是完整 OpenAI 协议认证，也没有新增
+GPU 或多引擎实测。独立审阅、默认分支集成与 P1-002/OBS 具体设计批准仍待完成。
+
 - **复杂度**：L2。
 - **目标**：用本地可控 HTTP server 验证 `run_request`、closed/Poisson 和 summary，
   覆盖全部错误分类。
