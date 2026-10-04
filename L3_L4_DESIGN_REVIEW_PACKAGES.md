@@ -467,6 +467,14 @@ reference 必须独立构造连续逻辑 K/V，不能调用 `paged_gather_blocks
 
 禁止在中间状态使 main 分支只能与未合并的另一个仓配合。
 
+### 5.4 当前待评审：原生序列登记观察
+
+选择 `PSRV-P1-002/OBS` 时，读取技术单源中的
+[G0-G8 具体提案](https://github.com/open-infra-ai/open-infra-ai/blob/17c5280b969cad374cbd739586fb7a1b315ae9e4/.agents/notes/proposed/architecture/2026-10-04-backend-sequence-observation.md)。
+其状态是 `proposed / pending`，不是本协议自动批准的设计。用户批准与评审问题关闭后
+才修改双仓生产代码；验收只覆盖原生登记观察，不代表持续 GPU lane、HTTP 网络回收
+或显存字节释放已完成。实现范围扩大时提交新的受限设计，不把整个 P1-002 一次做完。
+
 ## 6. CUF-WORKSPACE：decode workspace/stream 设计包
 
 对应任务：CUF-P0-001、CUF-P0-002、CUF-P0-003。

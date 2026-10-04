@@ -710,6 +710,12 @@ MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
 [远端 CI](https://github.com/open-infra-ai/paged-serving/actions/runs/37187094976) 的
 `serving-evidence`、Rust 1.88 MSRV 和 stable 检查均通过，head 对应 `a7fef1e`。
 
+同日解析门禁补强 [`ffc597a`](https://github.com/open-infra-ai/paged-serving/commit/ffc597ae10882b5410f869863ed5cbfc9d56eb78)
+拒绝任意层级重复 JSON 键（包括相同值、转义同名）与溢出为无穷大的浮点字面量。
+四类证据文件共用入口；CLI 返回 1、绘图不创建输出、原始文件不改写。
+完整离线回归为 40 个测试，五个存量包的 66 个 run 只读重验通过；原来的收敛规则和
+负结果保持不变。这是已复现缺陷的修复，不把 P1-001 改写成持续扩展的大项目。
+
 - **复杂度**：L2。
 - **目标**：validator 校验 per-request、summary、metadata、重复配置和 methodology，
   `plots.py` 拒绝混合不兼容 run。
@@ -762,6 +768,31 @@ MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
   对照，也不能凭前缀断言将分歧归因于量化。
 - **证据/停止**：无 GPU/合法模型/artifact 时 blocked；ABI 不匹配立即联合评审两仓。
 - **下游**：PSRV-P1-004。
+
+### PSRV-P1-002 后续切片：先观察，再扩实验
+
+以本轮整改分支为开发基线，不因默认分支未合入重复实现。下面是同一 Runtime/Serving
+旗舰的依赖顺序，不新增总路线；每批只选择一个切片。独立审阅与默认分支集成单列，
+主代理源码自查不是独立 reviewer 的验收，也不自动合并 PR #23。
+
+| 顺序 / 任务 | 所有者与改动范围 | 进入条件 | 可验收交付与停止点 |
+|---|---|---|---|
+| 0：整改分支独立审阅 | 本人或另行授权的独立 reviewer；先只读 | 固定 paged commit，列出与默认分支差异 | 覆盖取消线性化、事件终态、错误去重、loadgen 与结果门禁；输出逐项 findings/未发现问题及遗漏范围，不用测试全绿替代审阅 |
+| 1：`PSRV-P1-002/OBS`（L3） | tiny-llm 原生查询、paged FFI/适配器与测试；meta live 契约 | 用户明确批准下面的 G0-G8 提案；共同关闭评审问题 | 真实原生登记：初始 0，四请求执行中 4，完成/取消/失败后 0；拦截释放时分页原生数量非零。两策略、Sanitizer、双仓 commit/库 SHA；只关闭 OBS，不称 GPU lane 完成 |
+| 2：`PSRV-P1-002/HTTP`（L3） | paged 的本地真实 TCP/SSE 与后端生命周期测试；生产修复另列最小范围 | OBS 可观察；先批准 socket 断开、SSE body drop 与终态时序设计 | 客户端收到首帧后断连，后端终态后登记/active/逻辑 KV 回基线，同实例再服务成功；保留计数与 raw。不能以 Router oneshot 或直接 engine.cancel 替代 TCP 证据，也不宣称 kernel 抢占 |
+| 3：`PSRV-P1-002/LANE`（L3） | paged 的严格执行脚本与 provenance manifest；先使用现有本机 GPU | OBS/HTTP 已验收；脚本、输入与 artifact 设计批准 | 从 fixed-source 构建库并串行跑矩阵；缺模型/库/GPU 非零、实际 test 数与 ignored/skip 可审计、记录 SHA 与原始退出码。持续运行证据另验；不得直接注册 self-hosted runner、提交模型或租云 GPU |
+| 4：`PSRV-P1-003`（L3） | paged metrics sampler/sweep 与取消/HOL/fairness 场景 | 真实回收与严格 lane 已过；遥测格式、时钟和扰动对照设计批准 | raw 带单调时间戳/测量窗口；scrape 失败是 unavailable；采样 A/B 与失败/取消计数完整。仅验证 harness 时保持性能 not_measured |
+| 5：`PSRV-P1-004`（L4） | 现有引擎的固定版本实验与新结果包；不同时优化实现 | 上述 correctness 与遥测就绪，逐引擎 canary 通过 | 每格至少 3 次，固定模型/量化/数据/seed，保留未收敛、OOM、429 与启动失败；外部引擎不能语义配对就保留 blocked 格，不凑三引擎结论 |
+
+当前只完成 OBS 的
+[具体设计提案](https://github.com/open-infra-ai/open-infra-ai/blob/17c5280b969cad374cbd739586fb7a1b315ae9e4/.agents/notes/proposed/architecture/2026-10-04-backend-sequence-observation.md)，
+状态 `proposed / pending`：只读查询 C++ 登记表，不扩 HTTP 指标、不改调度/释放策略，
+不把逻辑利用率或 Rust shadow 表当 oracle。接口、所有权、故障对照、兼容、验证和回滚
+均在技术事实单源中，本仓只引用。审批只覆盖 OBS，不连带批准 HTTP、lane 或性能实验。
+
+本人答辩不等待全链完工：按现有 `INTERVIEW_MATRIX.md` 的 Q11 闭卷解释分页负对照
+为什么仍可复用、三个统计层为什么不能互相替代，记录本人答案再评分；Agent 不代勾。
+若时间只能覆盖一个实现，优先关闭 OBS 并复盘当前负结果，不扩到新框架或第二旗舰。
 
 ### PSRV-P1-003：接入服务遥测并固化取消/HOL/fairness 场景
 
