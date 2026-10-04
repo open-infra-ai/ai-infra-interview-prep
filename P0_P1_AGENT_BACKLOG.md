@@ -662,7 +662,7 @@ MSRV 与 stable 检查均通过，head 对应 `3039093`。
   engine metrics tests 和 clippy。
 - **证据/停止**：若 inflight 定义是 handler lifetime 还是 generation lifetime 未决，
   先由 reviewer 选择并更新 HELP 文本。
-- **下游**：PSRV-P0-004 的 CLI/真实传输回归已有整改分支证据，继续结果包语义校验与 PSRV-P1-003/004。
+- **下游**：PSRV-P0-004 的 CLI/真实传输和 P1-001 的结果语义回归已有整改分支证据；独立评审后继续真实后端门禁与 PSRV-P1-003/004。
 
 ### PSRV-P0-004：为 loadgen 补真实 HTTP/SSE 失败回归
 
@@ -687,7 +687,8 @@ MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
   missing DONE 与 usage 缺失；包含在第三批完整 cargo test 中。不能按旧任务描述
   从零重建临时 server；seeded Poisson 间隔、warmup 排除、token coverage 和 summary
   已有纯函数测试；负载执行到输出文件的 CLI 回归由 `tests/loadgen_cli.rs` 补齐。
-  不重复开发；剩余是语义 validator、长负载、真实 GPU 与服务端网络回收。
+  P1-001 的语义 validator 也已有自动验收；不重复开发。剩余是独立评审、长负载、
+  真实 GPU 与服务端网络回收。
 - **前置与范围**：允许在 loadgen tests 内建临时 server，必要时最小拆出 `src/loadgen.rs`；
   禁止长 sleep、外网依赖或把 chunk count 当 token count。
 - **验收**：LF/CRLF、split UTF-8、invalid JSON、server error、无 `[DONE]`、usage 有/无、
@@ -699,16 +700,27 @@ MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
 
 ### PSRV-P1-001：升级正式结果语义校验和收敛审计
 
+状态（2026-10-04）：整改分支
+[`a7fef1e`](https://github.com/open-infra-ai/paged-serving/commit/a7fef1e523132fe5e52bf22141afdc97db53b682)
+已实现并通过自动验收：36 个标准库测试；5 个存量包共 66 个 run 只读重验通过，
+三个正式包使用 `--formal`，两个 canary 使用基础模式。9/7 的 c2/c8 和三档 Poisson
+未收敛、83 个 429 保留；图表只生成在临时目录，不改历史包。
+[决策与校验限制](https://github.com/open-infra-ai/paged-serving/blob/a7fef1e523132fe5e52bf22141afdc97db53b682/.agents/notes/implemented/testing/2026-10-04-serving-result-semantics.md)
+明确数据内部一致不等于 GPU correctness 或稳定 SLO；独立审阅与默认分支集成仍待完成。
+[远端 CI](https://github.com/open-infra-ai/paged-serving/actions/runs/37187094976) 的
+`serving-evidence`、Rust 1.88 MSRV 和 stable 检查均通过，head 对应 `a7fef1e`。
+
 - **复杂度**：L2。
 - **目标**：validator 校验 per-request、summary、metadata、重复配置和 methodology，
   `plots.py` 拒绝混合不兼容 run。
-- **当前证据**：`benchmarks/serving/validate_results.py` 当前主要检查文件/schema；
-  `methodology.md` 已要求 3 repetitions 和 >10% 未收敛。
+- **当前证据**：`benchmarks/serving/validate_results.py` 联合重算 JSONL/summary/metadata，
+  产出收敛诊断；绘图复用门禁、拒绝不兼容系列和已知 token 子集平均。
 - **前置与范围**：依赖 PSRV-P0-004；允许改 validator/plots/methodology/template 和新增
   fixtures；禁止按结果好坏判通过或重写 raw data。
 - **验收**：total=success+failed、error totals、sample count、coverage、JSONL count、
   throughput/wall time、重复参数一致；波动输出 machine-readable `non_converged`。
-- **命令**：新增 Python tests；对历史 2026-09-07 正式包运行 `--formal` 和 plots。
+- **命令**：`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s benchmarks/serving -p 'test_*.py' -v`；
+  对历史 2026-09-07 正式包运行 `--formal --json`，plots 使用独立 `--out-dir`。
 - **证据/停止**：旧包若不通过必须给迁移诊断；warning/hard failure 未达成一致时升级
   methodology 评审。
 - **下游**：PSRV-P1-003/004。

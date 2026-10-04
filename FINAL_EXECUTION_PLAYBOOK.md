@@ -53,7 +53,8 @@ CUDA 基础
 1. **Runtime/综合方向**：已有 direct/split-KV 的当前 GPU/集成复核、端到端配对 A/B；不从零重做。
 2. **Kernel 方向**：`cuflash` decode workspace/stream safety。
 3. **Serving 方向**：取消/背压/指标 CPU 回归与 loadgen CLI/TCP 回归已有整改分支证据，
-   先评审实现，再补结果包语义校验、真实 CUDA/服务端网络回收，不从零重做。
+   结果语义回归也已有自动验收；先独立评审，再设计真实后端非 skip 门禁并验证
+   CUDA/服务端网络回收，不从零重做，不把数据一致性当作稳定 SLO。
 
 三条路径只能选一条作为当前深改造。其余保持 backlog，不同时进入 production
 implementation。
@@ -175,7 +176,7 @@ CUF-P0-001
 ```text
 PSRV-P0-001/002/003 整改分支 CPU 验收复核（未合入不等于未实现）
   → PSRV-P0-004 CLI/TCP 验收复核（整改分支已通过）
-  → PSRV-P1-001
+  → PSRV-P1-001 结果语义自动验收已有，独立审阅与默认分支集成待完成
   → PSRV-P1-002
   → PSRV-P1-003
   → PSRV-P1-004
@@ -246,7 +247,7 @@ design
 | 1 | CUDA-P0-001 | 消除 GPU 测试假绿 |
 | 2 | TRI-P1-008 | 区分 CPU skip 与 GPU pass |
 | 3 | KVT-P0-004 | 让离线实验脚手架进入 CI |
-| 4 | PSRV-P0-004 → PSRV-P1-001 | CLI/TCP 回归已有，下一步校验结果语义与重复配置 |
+| 4 | PSRV-P1-001 → PSRV-P1-002 | 语义自动验收已有；先独立评审，再做真实后端门禁设计 |
 | 5 | CUDA-P0-002 | 建立 ragged/NaN/Inf correctness |
 | 6 | TRI-P0-001 | 冻结 custom-op eager/fake 契约 |
 | 7 | TLLM-P0-002 | 复核已有 oracle，不重复实现 |

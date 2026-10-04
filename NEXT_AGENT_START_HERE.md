@@ -168,7 +168,8 @@ git -C <repo> status --short
 
 ```text
 先复核已推送的整改分支与默认分支差异，再选择剩余验收：
-PSRV-P0-001/002/003 CPU 与 P0-004 CLI/TCP 证据 → PSRV-P1-001 结果语义 / 真实 CUDA 回收
+PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
+  → 独立评审 → PSRV-P1-002 真实后端非 skip 门禁设计评审 / 真实 CUDA 回收
 ```
 
 原因：
@@ -178,15 +179,17 @@ PSRV-P0-001/002/003 CPU 与 P0-004 CLI/TCP 证据 → PSRV-P1-001 结果语义 /
   260 个默认测试与 17 个 doc tests 本地通过；复核
   [指标任务状态](P0_P1_AGENT_BACKLOG.md#psrv-p0-003冻结服务指标语义并补生命周期回归)，不自动合并；
 - `69dafbe` 的真实 CLI/TCP 回归验证 closed/Poisson、warmup、输入顺序与结果文件，
-  264 个默认测试与 17 个 doc tests 本地通过。下一步补结果包语义校验，不重写已验收部分；
+  264 个默认测试与 17 个 doc tests 本地通过，不重写已验收部分；
   不把 loadgen 夹具或 Router oneshot 当作真实 CUDA/生产服务端回收证明。
+- `a7fef1e` 的 36 个离线测试与 66 个存量 run 重验支持结果语义门禁；未收敛仍保留。
+  独立审阅与默认分支集成未完成；下一步先评审，再进入真实后端非 skip 门禁设计。
 
 替代入口：
 
 | 用户目标 | 首选任务 |
 |----------|----------|
 | CUDA/Kernel | `CUF-P0-001`，先冻结 workspace/stream lifecycle |
-| Serving | `PSRV-P1-001`，联合校验原始请求、summary、metadata 与重复配置 |
+| Serving | 独立评审整改分支，然后 `PSRV-P1-002` 的 L3 设计门禁；不重做 P1-001 |
 | 纯 CPU/无 GPU | `KVT-P0-004` 或 `TRI-P0-001` |
 | 修证据真实性 | `CUDA-P0-001` 或 `TRI-P1-008` |
 
@@ -468,7 +471,7 @@ CPU、GPU correctness、sanitizer、performance 分开报告。
 
 ```text
 先看本人闭卷诊断最低分和当前 PR/证据
-  → 综合/Serving：复核整改分支 → 结果包语义校验 / CUDA 与服务端网络回收
+  → 综合/Serving：独立评审整改分支 → 真实后端门禁设计 / CUDA 与服务端网络回收
   → Runtime：复核已有 direct/split-KV → 端到端配对 A/B
   → Kernel：cuflash workspace/stream 安全
 ```

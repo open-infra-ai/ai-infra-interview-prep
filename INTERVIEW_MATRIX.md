@@ -184,10 +184,13 @@ W3 起每周补充当周主题的 3–5 题并自评。此文件是索引 + 示�
 - **追问树**：coordinated omission？→ 先测哪段时间线？→ 怎样区分 CPU、GPU 和排队瓶颈？
   → 未配对的两包数据为什么不能算优化 speedup？
   → 为何同 seed 还会受预热影响？→ 相对 sleep 如何积累漂移？→ 迟到后应补发还是丢请求？
-- **代码定位**：paged-serving `src/bin/loadgen.rs`、Serving methodology 与 9/7 原始请求。
+  → 为什么只平均 token 已知的重复会产生选择偏差？→ 语义校验通过为何不等于已收敛？
+- **代码定位**：paged-serving `src/bin/loadgen.rs`、Serving validator/plots、methodology 与 9/7 原始请求。
 - **实验证据**：正式 21-run 报告，不把 c1→c8 的观察外推为所有模型的结论。
   [CLI 复现证据](https://github.com/open-infra-ai/paged-serving/blob/69dafbe9e4f726fa8f5b472666e4679945b516b3/.agents/notes/implemented/testing/2026-10-04-loadgen-cli-reproducibility.md)
   验证同 seed 有/无预热的计划一致、输入顺序和落盘口径；不是新的 GPU 性能包。
+  [结果语义证据](https://github.com/open-infra-ai/paged-serving/blob/a7fef1e523132fe5e52bf22141afdc97db53b682/.agents/notes/implemented/testing/2026-10-04-serving-result-semantics.md)
+  重验保留未收敛与 429；不把机器校验通过解释为服务容量或本人掌握程度。
 - **评分/自评**：B 需区分观察与因果；A 需设计一个单变量配对实验。__待本人复测__。
 
 ## Q14（P0·C++）30 分钟写一个容量守恒的 block allocator（每周）
