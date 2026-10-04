@@ -168,15 +168,17 @@ git -C <repo> status --short
 
 ```text
 先复核已推送的整改分支与默认分支差异，再选择剩余验收：
-PSRV-P0-001/002 的 CPU 证据 → PSRV-P0-003 完整指标 / PSRV-P0-004 网络失败
+PSRV-P0-001/002/003 的 CPU 证据 → PSRV-P0-004 真实传输失败 / 真实 CUDA 回收
 ```
 
 原因：
 
 - direct oracle、kernel 和集成已存在，旧默认任务容易重复开发；
-- PR #23 在 2026-10-04 为 OPEN；整改分支 `59d90c8` 已复用并扩展取消/背压，
-  本地 CPU 回归通过；复核 [任务卡状态](P0_P1_AGENT_BACKLOG.md#psrv-p0-001实现请求所有权驱动的主动取消)，不自动合并；
-- 默认分支尚未更新不等于“需要重写”；下一步补完整指标与真实 backend/网络验收。
+- PR #23 在 2026-10-04 为 OPEN；整改分支 `3039093` 已复用并扩展取消/背压/指标，
+  260 个默认测试与 17 个 doc tests 本地通过；复核
+  [指标任务状态](P0_P1_AGENT_BACKLOG.md#psrv-p0-003冻结服务指标语义并补生命周期回归)，不自动合并；
+- 默认分支尚未更新不等于“需要重写”；下一步复核既有真实传输测试再补缺口，
+  不把 Router oneshot 的 CPU 验收当作 TCP 故障或 CUDA 回收证明。
 
 替代入口：
 
@@ -464,7 +466,7 @@ CPU、GPU correctness、sanitizer、performance 分开报告。
 
 ```text
 先看本人闭卷诊断最低分和当前 PR/证据
-  → 综合/Serving：复核整改分支 → 完整指标 / 真实 backend 与网络验收
+  → 综合/Serving：复核整改分支 → 真实 HTTP/SSE 故障 / CUDA 回收验收
   → Runtime：复核已有 direct/split-KV → 端到端配对 A/B
   → Kernel：cuflash workspace/stream 安全
 ```

@@ -636,13 +636,24 @@ prefill 保留 gather。9/14–9/15 是 kernel 结果，不证明模型或 Servi
 
 ### PSRV-P0-003：冻结服务指标语义并补生命周期回归
 
+状态（2026-10-04）：整改分支
+[`3039093`](https://github.com/open-infra-ai/paged-serving/commit/3039093ddc2fb6ddcab9508e4024bc84a61816c7)
+通过 CPU 验收：类型化 Cancelled、按候选的独立 cancelled 计数，JSON/准入/后端/
+SSE 错误按 HTTP 请求去重，未读 body 的后端失败可观测。Rust 1.88 通过 260 个默认
+测试与 17 个 doc tests；25 个服务内联与 48 个 HTTP/SSE 测试重复 10 轮通过。
+[远端 CI](https://github.com/open-infra-ai/paged-serving/actions/runs/37170403585) 的 Rust 1.88
+MSRV 与 stable 检查均通过，head 对应 `3039093`。
+默认分支未合入，取消/背压的真实网络压力与 CUDA 回收不算这项新增 CPU 验收成果。
+
 - **复杂度**：L2。
 - **目标**：明确 requests/errors/inflight/streaming 和 engine counters 的计数单位、开始/
   结束时点及错误路径。
 - **当前证据**：`src/server.rs::ServerMetrics/SharedEngineMetrics` 与 `/metrics` 已存在；
   整改分支已把 inflight guard 移入 SSE body，数值回归覆盖 1→0 和 n>1 不乘候选数。
-  剩余是 typed Cancelled / 独立取消计数、malformed JSON、SSE terminal error、
-  完整 HELP 与引擎计算成功/HTTP 交付成功的区分，不能据旧描述再次重做 inflight。
+  类型化终态、完整 HELP、HTTP 去重与末步溢出区分见
+  [指标决策](https://github.com/open-infra-ai/paged-serving/blob/3039093ddc2fb6ddcab9508e4024bc84a61816c7/.agents/notes/implemented/bug-fix/2026-10-04-typed-cancellation-and-metrics.md)，
+  不因默认分支未更新而重新开发。engine failed 排除主动取消，HTTP errors 不是全体
+  5xx；Rust public 字段与 enum 的 source-breaking change 已记录。
 - **前置与范围**：依赖取消/背压设计；允许改 metrics 实现、文档和数值测试；
   禁止改变指标含义却沿用原名而不记录 breaking change。
 - **验收**：malformed JSON、429、admission error、SSE terminal error、disconnect、
@@ -651,15 +662,20 @@ prefill 保留 gather。9/14–9/15 是 kernel 结果，不证明模型或 Servi
   engine metrics tests 和 clippy。
 - **证据/停止**：若 inflight 定义是 handler lifetime 还是 generation lifetime 未决，
   先由 reviewer 选择并更新 HELP 文本。
-- **下游**：PSRV-P1-003/004。
+- **下游**：优先复核 PSRV-P0-004 的既有真实传输测试并补缺口，再做 PSRV-P1-003/004。
 
 ### PSRV-P0-004：为 loadgen 补真实 HTTP/SSE 失败回归
 
 - **复杂度**：L2。
 - **目标**：用本地可控 HTTP server 验证 `run_request`、closed/Poisson 和 summary，
   覆盖全部错误分类。
-- **当前证据**：`src/bin/loadgen.rs` 已实现 timeout、429、4xx、5xx、connection、
-  stream/protocol/no_done 等分类，但大量测试仍偏解析器/纯函数。
+- **当前证据**（2026-10-04 复核）：`src/bin/loadgen.rs` 已有一次性本地 TCP server，
+  11 个 `run_request_*` 异步测试覆盖成功 usage、CRLF、跨 TCP 写分割 UTF-8、
+  HTTP 错误状态、connection refused、timeout、非法 JSON/UTF-8、error frame、
+  missing DONE 与 usage 缺失；包含在第三批完整 cargo test 中。不能按旧任务描述
+  从零重建临时 server；seeded Poisson 间隔、warmup 排除、token coverage 和 summary
+  已有纯函数测试。剩余先审计 closed/Poisson 负载执行到输出文件的端到端覆盖，
+  再决定最小新增用例；不据间隔函数可复现就宣称整条负载路径已验收。
 - **前置与范围**：允许在 loadgen tests 内建临时 server，必要时最小拆出 `src/loadgen.rs`；
   禁止长 sleep、外网依赖或把 chunk count 当 token count。
 - **验收**：LF/CRLF、split UTF-8、invalid JSON、server error、无 `[DONE]`、usage 有/无、
