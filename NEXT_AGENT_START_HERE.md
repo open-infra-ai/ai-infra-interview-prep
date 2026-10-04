@@ -183,6 +183,12 @@ PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据
   不把 loadgen 夹具或 Router oneshot 当作真实 CUDA/生产服务端回收证明。
 - `a7fef1e` 的 36 个离线测试与 66 个存量 run 重验支持结果语义门禁；未收敛仍保留。
   独立审阅与默认分支集成未完成；下一步先评审，再进入真实后端非 skip 门禁设计。
+- `b83dcf8` 已局部修复真实测试假绿，并归档五个 GPU 用例和 30 条 tokenizer fixture
+  的实际执行输出；完整 feature 套件 272 个测试与 17 个 doc tests、零忽略。
+  默认套件当前为 263 个实际执行、1 个 ignored 与 17 个 doc tests；历史 264 个 passed
+  含缺输入的直接返回，不能全部算实际验证。先复核
+  [P1-002 当前状态](P0_P1_AGENT_BACKLOG.md#psrv-p1-002建立真实-tiny-llm-backend-非-skip-门禁)，
+  不重复修复、不把局部测试整改升级成 L3 审批或持续 GPU CI 已完成。
 
 替代入口：
 

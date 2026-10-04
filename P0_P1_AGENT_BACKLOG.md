@@ -732,12 +732,26 @@ MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
   blocked/failure，不允许测试函数提前 return 后显示 passed。
 - **当前证据**：`Cargo.toml`、`build.rs`、`tests/tiny_llm_backend.rs`、
   `tests/tiny_llm_text_e2e.rs`、`tests/tokenizer_real_diff.rs`。
+  整改分支 [`b83dcf8`](https://github.com/open-infra-ai/paged-serving/commit/b83dcf843906f5ab8a2eed18ab7077be074d8e62)
+  已修复测试提前返回的假绿：默认 tokenizer 明确 ignored，显式执行缺输入失败；
+  CPU CI 检查缺 tokenizer/fixture 的实际失败出口。
+  [执行笔记与原始输出](https://github.com/open-infra-ai/paged-serving/blob/b83dcf843906f5ab8a2eed18ab7077be074d8e62/.agents/notes/implemented/testing/2026-10-04-real-test-execution-gates.md)
+  记录 RTX 3060 Laptop 上五个 GPU 用例和 30 条 tokenizer fixture 实际通过，
+  完整 feature 套件 272 个测试加 17 个 doc tests、零忽略；测试时 paged 工作树
+  为 dirty，测试文件以 SHA-256 绑定，不称为 clean-commit benchmark。
+  这是测试执行语义的局部修复与单机功能验证，不是 L3 设计批准或完整任务关闭。
 - **前置与范围**：冻结跨仓 artifact/ABI/模型提供方式；允许改 build、workflow 和真实
   backend tests；禁止提交模型/secret 或下载 floating revision。
 - **验收**：feature link、load、greedy、3 并发、错误路径资源回收、tokenizer/text
   oracle；artifact/model 绑定 commit/SHA-256。
 - **命令**：以任务卡环境变量运行三个现有 integration tests，再运行
-  `cargo test --features tiny-llm`。
+  `cargo test --locked --features tiny-llm -- --include-ignored --test-threads=1`；
+  tokenizer 单独运行需 `--ignored`，固定策略 1、max_seqs=4、decode_reserve=512，
+  路径和静态库来源按技术仓 README 与执行笔记复核。
+- **剩余验收**：完整 GPU lane 的 G0-G8 设计审批、runner/模型/artifact 提供方式与
+  持续运行证据；独立审阅、默认分支集成和真实 HTTP 取消回收分别记录，不自动合并。
+  Hello 仅匹配历史全序列 oracle，数学请求只检查公共前缀；不能称本次独立 llama.cpp
+  对照，也不能凭前缀断言将分歧归因于量化。
 - **证据/停止**：无 GPU/合法模型/artifact 时 blocked；ABI 不匹配立即联合评审两仓。
 - **下游**：PSRV-P1-004。
 

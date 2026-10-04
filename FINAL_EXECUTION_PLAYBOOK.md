@@ -53,7 +53,8 @@ CUDA 基础
 1. **Runtime/综合方向**：已有 direct/split-KV 的当前 GPU/集成复核、端到端配对 A/B；不从零重做。
 2. **Kernel 方向**：`cuflash` decode workspace/stream safety。
 3. **Serving 方向**：取消/背压/指标 CPU 回归与 loadgen CLI/TCP 回归已有整改分支证据，
-   结果语义回归也已有自动验收；先独立评审，再设计真实后端非 skip 门禁并验证
+   结果语义回归也已有自动验收；真实测试假绿已局部修复并有单机 GPU 功能验证。
+   先独立评审，再设计持续 GPU lane 并验证
    CUDA/服务端网络回收，不从零重做，不把数据一致性当作稳定 SLO。
 
 三条路径只能选一条作为当前深改造。其余保持 backlog，不同时进入 production
@@ -177,7 +178,7 @@ CUF-P0-001
 PSRV-P0-001/002/003 整改分支 CPU 验收复核（未合入不等于未实现）
   → PSRV-P0-004 CLI/TCP 验收复核（整改分支已通过）
   → PSRV-P1-001 结果语义自动验收已有，独立审阅与默认分支集成待完成
-  → PSRV-P1-002
+  → PSRV-P1-002：测试执行语义与单机功能已局部验收，持续 GPU lane 待设计审批
   → PSRV-P1-003
   → PSRV-P1-004
 ```
