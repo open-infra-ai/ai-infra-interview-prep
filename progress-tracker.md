@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-21
+updated: 2026-10-04
 generated_by: scripts/progress.py
 ---
 
@@ -18,10 +18,10 @@ generated_by: scripts/progress.py
 | 第 4 周 | 2026-09-14 ~ 2026-09-20 | Triton、PyTorch 自定义算子 | 0% | [笔记](./weekly/week-04.md) |
 | 第 5 周 | 2026-09-21 ~ 2026-09-27 | Transformer 推理、量化、模型加载 | 0% | [笔记](./weekly/week-05.md) |
 | 第 6 周 | 2026-09-28 ~ 2026-10-04 | KV Cache、Decode、CUDA Graph、性能指标 | 0% | [笔记](./weekly/week-06.md) |
-| 第 7 周 | 2026-10-05 ~ 2026-10-11 | Paged KV、Continuous Batching、调度 | 0% | [笔记](./weekly/week-07.md) |
-| 第 8 周 | 2026-10-12 ~ 2026-10-18 | HTTP/SSE、压测、可观测性、Linux 调优 | 0% | [笔记](./weekly/week-08.md) |
-| 第 9 周 | 2026-10-19 ~ 2026-10-25 | NCCL、并行策略、通信/计算重叠 | 0% | [笔记](./weekly/week-09.md) |
-| 第 10 周 | 2026-10-26 ~ 2026-11-01 | 项目证据包、简历项目、GitHub 展示 | 0% | [笔记](./weekly/week-10.md) |
+| 第 7 周 | 2026-10-05 ~ 2026-10-11 | 可信度整改、闭卷诊断、Paged KV 答辩 | 0% | [笔记](./weekly/week-07.md) |
+| 第 8 周 | 2026-10-12 ~ 2026-10-18 | 取消、背压、失败回收与 Serving | 0% | [笔记](./weekly/week-08.md) |
+| 第 9 周 | 2026-10-19 ~ 2026-10-25 | Profiler、配对实验与负结果归因 | 0% | [笔记](./weekly/week-09.md) |
+| 第 10 周 | 2026-10-26 ~ 2026-11-01 | 一个上游框架、证据包与简历 | 0% | [笔记](./weekly/week-10.md) |
 | 第 11 周 | 2026-11-02 ~ 2026-11-08 | CUDA/C++/系统设计模拟面试 | 0% | [笔记](./weekly/week-11.md) |
 | 第 12 周 | 2026-11-09 ~ 2026-11-15 | 查漏补缺、投递、复盘 | 0% | [笔记](./weekly/week-12.md) |
 

@@ -812,9 +812,11 @@ ctest --test-dir build --output-on-failure --timeout 300
 - [ ] 能写出 direct paged attention 的索引公式；
 - [ ] 能提出可测试的改造方案。
 
-### 实验 7：direct paged attention 深改造
+### 实验 7：已有 direct/split-KV 的集成与收益复核
 
-这是优先级最高的后续旗舰任务之一。
+2026-10-04：kernel、独立 oracle、Transformer/FFI 接入和 9/14–9/15 kernel raw 已存在。
+以下步骤描述实现依赖与复核维度，不是从零重写清单；当前重点是持续门禁、固定模型
+的端到端配对 A/B 与可打开 profiler 包。默认 legacy、split 关闭，不凭微基准开默认。
 
 步骤：
 

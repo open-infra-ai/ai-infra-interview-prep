@@ -1,6 +1,10 @@
 # 七仓详细改进、阶段成果与面试使用手册
 
-更新时间：2026-09-13。
+更新时间：2026-10-04。
+
+阶段表是验收标准，不代表所有项仍待从零开发。已有 direct oracle/kernel、split-KV、
+Transformer/FFI 接入与 kernel A/B，当前仍缺端到端因果实验和持续门禁；详见
+[任务卡状态](P0_P1_AGENT_BACKLOG.md)。本人贡献和答辩能力单独复测，不直接套用示例的“我”。
 
 这不是新的路线图，也不替代已有任务单。它把以下三类材料连接起来：
 
@@ -56,7 +60,7 @@
 | `cuda-foundations` | CUDA/SGEMM 优化阶梯和测试 | GPU gate、sanitizer、Nsight 归因与公平计时 | M4 教学证据 |
 | `trifuse` | Triton 算子与 `torch.library` 基础 | fake/meta/export、timing/provenance、framework contract | M5 框架集成证据 |
 | `cuflash` | FlashAttention/FlashDecoding 算法实现 | workspace/stream safety、GPU gate、profile/baseline | M4 Kernel 深挖 |
-| `tiny-llm` | 模型加载、量化、KV、decode、C ABI | independent paged oracle、direct paged path、长上下文 A/B | M5 旗舰数据面 |
+| `tiny-llm` | 模型加载、量化、KV、Graph、C ABI、direct/split-KV 与 kernel A/B | 当前 GPU/Sanitizer 门禁、第二模型、raw profiler 与端到端配对 A/B | M5 旗舰数据面 |
 | `paged-serving` | Rust 调度、BlockPool、HTTP/SSE | cancel/backpressure、真实 backend gate、容量/尾延迟 | M5 旗舰控制面 |
 | `kvtier` | SGLang HiCache 研究脚手架 | pinned upstream、schema、回载 correctness、真实单卡矩阵 | M4 研究证据 |
 | `open-infra-ai` | 组织导航、契约和审计路线 | 持续 evidence lifecycle、stale/revoked 和 demo 索引 | M5 治理入口 |
@@ -1245,11 +1249,9 @@ next_task_id:
 ### 12.1 默认 Runtime/Serving 路线
 
 ```text
-TLLM-P0-002
-  → TLLM-P0-004
-  → TLLM-P0-005
-  → TLLM-P1-001
-  → PSRV-P0-001
+复核已有 TLLM-P0-002/004/005 与 split-KV
+  → TLLM-P1-001 剩余端到端配对 A/B
+  → PSRV-P0-001 PR #23 review
   → PSRV-P0-002
   → PSRV-P0-003/004
   → PSRV-P1-002

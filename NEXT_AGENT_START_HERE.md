@@ -24,8 +24,9 @@ open-infra-ai/trifuse
 open-infra-ai/cuflash
 open-infra-ai/tiny-llm
 open-infra-ai/paged-serving
-open-infra-ai/kvtier
 ```
+
+`kvtier` 是本地私有孵化器，不进入公开注册表，不在此提供公开链接。
 
 个人执行仓：
 
@@ -59,6 +60,8 @@ Triton/PyTorch 对照：
 - 不新增第八个练习项目；
 - `cuflash` 和 `trifuse` 不是 `tiny-llm` runtime 硬依赖；
 - `tiny-llm` 当前 paged storage/gather 路径不能自动称为 direct PagedAttention；
+- direct paged/split-KV 已实现并有 9/14–9/15 kernel raw；默认 legacy、split 关闭，
+  端到端收益仍需独立实验，不从零重复 TLLM-P0-002/004/005；
 - `paged-serving` scheduler batching 不能自动称为 fused GPU batch compute；
 - `kvtier` 是上游研究和实验脚手架，不是自研生产 tiering engine；
 - CPU/build、GPU correctness、benchmark、profiler 和 Serving 是不同证据层。
@@ -92,7 +95,7 @@ Triton/PyTorch 对照：
 |--------|----------|
 | `holtwood/ai-infra-interview-prep` | 当前个人执行仓为 `open-infra-ai/ai-infra-interview-prep` |
 | `triton-fused-ops` | 当前公开仓名为 `trifuse` |
-| “五个技术仓” | 当前有六个技术仓，另有一个 meta 仓 |
+| 公开仓集合含 `kvtier` | 五个公开技术仓 + meta；kvtier 私有孵化，个人执行仓另列 |
 | `AICL-Lab` / `aicl-lab` | 历史组织名；archive 中保持原样 |
 | `/home/shane/...` 等固定路径 | 只表示历史机器；必须重新发现当前 checkout |
 | 2026-08 的 commit/CI/结果状态 | 历史快照；重新 fetch 和验证 |
@@ -164,27 +167,77 @@ git -C <repo> status --short
 若用户没有指定岗位或任务，默认建议：
 
 ```text
-TLLM-P0-002：建立 paged/contiguous synthetic oracle
+先复核已合入 PR #24 的 commit 和现有证据，再选择剩余验收：
+PSRV-P0 CPU、P0-004 CLI/TCP 与 P1-001 结果语义证据已完成代理审阅与集成
+  → PSRV-P1-002/OBS 具体设计评审 → 原生登记 / 真实 GPU HTTP 回收
 ```
 
 原因：
 
-- 不依赖真实模型即可先做大部分工作；
-- 为 direct paged attention 提供独立 correctness 门禁；
-- 同时服务 Runtime 和 Serving 主线；
-- 风险低于直接写 L4 kernel。
+- direct oracle、kernel 和集成已存在，旧默认任务容易重复开发；
+- PR #23 在 2026-10-04 为 OPEN；整改分支 `3039093` 已复用并扩展取消/背压/指标，
+  260 个默认测试与 17 个 doc tests 本地通过；复核
+  [指标任务状态](P0_P1_AGENT_BACKLOG.md#psrv-p0-003冻结服务指标语义并补生命周期回归)，不自动合并；
+- `69dafbe` 的真实 CLI/TCP 回归验证 closed/Poisson、warmup、输入顺序与结果文件，
+  264 个默认测试与 17 个 doc tests 本地通过，不重写已验收部分；
+  不把 loadgen 夹具或 Router oneshot 当作真实 CUDA/生产服务端回收证明。
+- `a7fef1e` 的 36 个离线测试与 66 个存量 run 重验支持结果语义门禁；未收敛仍保留。
+  独立审阅与默认分支集成已由 PR #24 完成；真实 GPU 门禁仍按具体设计审批执行。
+- `b83dcf8` 已局部修复真实测试假绿，并归档五个 GPU 用例和 30 条 tokenizer fixture
+  的实际执行输出；完整 feature 套件 272 个测试与 17 个 doc tests、零忽略。
+  该批默认套件为 263 个实际执行、1 个 ignored 与 17 个 doc tests；历史 264 个 passed
+  含缺输入的直接返回，不能全部算实际验证。先复核
+  [P1-002 当前状态](P0_P1_AGENT_BACKLOG.md#psrv-p1-002建立真实-tiny-llm-backend-非-skip-门禁)，
+  不重复修复、不把局部测试整改升级成 L3 审批或持续 GPU CI 已完成。
+- `4b09556` 增加真实后端终态后的同实例复用与释放通知负对照；策略 1/2 各四个
+  后端用例通过，策略 2 完整 feature 为 274 个测试加 17 个 doc tests、零忽略。
+  连续 KV 探针识别槽位耗尽，分页 KV 对照仍能复用，说明分页登记验证仍有盲区。
+  直接引擎取消已有局部证据，真实 HTTP 取消回收与持续 GPU lane 仍待验收。
+  不重复开发测试，也不把这份反例解释为已查明生产泄漏或已完成显存回收。
+- `ffc597a` 修复已复现的 JSON 末值覆盖与浮点溢出漏验；结果审计完整 40 个离线测试、
+  66 个历史 run 重验通过，结果 schema/收敛规则不变。除非能复现新缺陷，不重新扩建
+  P1-001。后续进入
+  [P1-002 执行切片](P0_P1_AGENT_BACKLOG.md#psrv-p1-002-后续切片先观察再扩实验)，
+  审阅和集成已完成；后续为原生登记 OBS → 真实 HTTP → 严格 GPU lane → 遥测/配对实验。
+  选择 OBS 时必须先读取任务卡链接的 G0-G8 提案；它是 `proposed / pending`，需要用户
+  明确批准并留下评审结论才能实现双仓 ABI，泛泛的“继续”不能代替对具体设计的批准。
+- `92a2cf5` 修复客户端正文总预算到期误记为 stream_error 的实际缺陷；21 个 loadgen
+  测试和 5 个 CLI 用例连续 10 轮通过，该批默认套件为 267 个实际执行、17 个 doc
+  tests 与 1 个明确 ignored。原始部分输出保留，失败不进入成功性能；不重写旧错误
+  计数，不当作服务端取消或 GPU 回收。后续任务顺序不变，OBS 仍待具体批准；本项
+  没有修改 C ABI。需要新增 loadgen 修复时先复现缺陷，不按旧清单从零重建。
+- `9bd6836` 修复异常 completion 被算成功的实际缺陷：已知字段类型/重复键、非法
+  usage、单候选与 DONE 前的 completion 有回归保护，合法空输出、usage-only 和扩展
+  字段仍通过。tokenizer fallback 的部分输出计数不能把失败改成成功。29 个 loadgen
+  测试和 6 个 CLI 用例连续 10 轮通过（80 个子进程），该批默认套件实际 276 个测试、
+  17 个 doc tests 与 1 个明确 ignored。不重判历史 raw，不称为 GPU、多引擎实测或
+  完整协议认证；OBS 具体方案批准仍待完成，审阅与集成以 PR #24 状态为准。
+- `92485dd` 只新增 CPU 真实 TCP 生命周期测试与笔记，未改生产实现。覆盖首文本后、
+  无文本 decode、unary 头前断连及 shutdown；先观察 HTTP owner 退出，再放行同步
+  在途步骤并验证取消/逻辑回收/释放通知。前三项在原实例成功服务四个探针，shutdown
+  有一个 error/DONE、readyz=503。四项连续 50 轮通过，该提交默认套件实际 280 个测试、
+  17 个 doc tests 与 1 个明确 ignored。测试许可用 block_in_place 交还 worker，不是
+  生产 offload；CPU 释放 probe 不等于原生登记或 GPU 显存回收。OBS、真实 GPU HTTP、
+  lane 的批准/验收仍待办，不凭这组 CPU 证据关闭 P1-002。
+- 当前集成（2026-10-05）：用户授权多代理与直接合并，四位独立只读代理审阅后，
+  六项发现经修复复审；Serving PR #24 合入默认分支（merge e60a315，head 30c16f4）。
+  `23338ad` 修复文本封口先于 Done 发布的竞态，确定性回归先失败后通过；最新默认
+  套件实际 282 个测试加 17 个 doc tests、1 个明确 ignored，40 项结果审计通过。
+  下一步按任务卡评审 OBS 具体提案，不重新实现取消/背压/压测门禁；旧 PR #23 保留。
 
 替代入口：
 
 | 用户目标 | 首选任务 |
 |----------|----------|
 | CUDA/Kernel | `CUF-P0-001`，先冻结 workspace/stream lifecycle |
-| Serving | `PSRV-P0-004`，先验证真实 HTTP/SSE failure path |
+| Serving | 评审 `PSRV-P1-002/OBS` 具体提案；已完成的独立代理审阅与默认分支集成不重复执行 |
 | 纯 CPU/无 GPU | `KVT-P0-004` 或 `TRI-P0-001` |
 | 修证据真实性 | `CUDA-P0-001` 或 `TRI-P1-008` |
 
-若首选任务已经完成，必须在当前默认分支找到 merged commit 和验收证据，再选择它的直接下游，
-不能因为文件存在就判定完成。
+若首选任务已经实现，先在当前授权工作分支定位 commit 和验收证据，再选择其直接下游。
+新批次的默认分支集成单列验收，不触发重复开发。已授权批次在固定 head 审阅与
+适用 CI 全绿后可逐仓合并；新 ABI/实验设计仍需各自明确批准。
+继续遵循原有范围和验证要求，不能因为文件存在就判定完成。
 
 ### Step 6：确定复杂度
 
@@ -231,12 +284,12 @@ blocked:
 
 ```yaml
 local_read: true
-local_edit_in_scope: true
+local_edit_in_scope: only_after_explicit_can_change_code
 local_build_test: true
 local_gpu: only_if_available_and_free
-git_commit: true
-git_push: true
-create_pr: true
+git_commit: only_after_explicit_approval
+git_push: only_after_explicit_approval
+create_pr: only_after_explicit_approval
 merge_pr: false
 paid_gpu: false
 download_restricted_model: false
@@ -297,7 +350,7 @@ task ID
 6. affected suite；
 7. GPU/sanitizer（若需要且可用）；
 8. review diff；
-9. commit、push、PR；
+9. 授权涵盖时才 commit、push、PR，否则保留本地 diff；
 10. 记录 evidence 和 handoff。
 
 禁止：
@@ -452,16 +505,17 @@ CPU、GPU correctness、sanitizer、performance 分开报告。
 最后按 AGENT_EXECUTION_GUIDE.md 第 15 节交接。
 ```
 
-## 16. 下一步唯一建议
+## 16. 下一步选择
 
 如果用户没有新的岗位选择、外部面试反馈或紧急 CI，下一位 Agent 不应继续写建议文档。
 
 执行：
 
 ```text
-审计 TLLM-P0-002 当前状态
-  → 缺失时完成 independent paged/contiguous synthetic oracle
-  → 通过后进入 direct paged attention 的 G0-G8 设计
+先看本人闭卷诊断最低分和当前 PR/证据
+  → 综合/Serving：复核已合入整改 → OBS 具体设计评审 / 真实 GPU HTTP 回收
+  → Runtime：复核已有 direct/split-KV → 端到端配对 A/B
+  → Kernel：cuflash workspace/stream 安全
 ```
 
-这是当前从“文档齐全”进入“旗舰技术证据”的最短路径。
+一次选一条；当前问题改变时可以替换任务，保留已有有效证据，不从零重写已实现阶段。

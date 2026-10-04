@@ -127,6 +127,9 @@ TPOT、吞吐、失败率和显存曲线；报告 warmup、重复次数、token 
 
 ### 市场对齐后的唯一 P0 链
 
+2026-10-04：oracle、direct kernel、split-KV 与 FFI 接入已存在；链路中的这些阶段
+只复核剩余验收。kernel A/B 已有，端到端收益待补；取消先 review OPEN PR #23。
+
 ```text
 TLLM-P0-002 synthetic oracle
   → TLLM-P0-004 direct paged decode
@@ -144,7 +147,7 @@ TLLM-P0-002 synthetic oracle
 
 | 仓库 | 市场价值 | 现在应做 | 暂时不做 |
 |------|---------|---------|---------|
-| `tiny-llm` | **最高，旗舰数据面** | synthetic oracle → direct paged decode → FFI 集成 → Nsight/长上下文 A/B；补充 exact model/commit/raw evidence | 新模型大而全支持、没有 profiler 证据的量化宣称 |
+| `tiny-llm` | **最高，旗舰数据面** | 复核已有 oracle/direct/split-KV/FFI；补持续门禁、raw profiler 与端到端配对 A/B | 重复重写已有 kernel、新模型大而全支持、无归因量化宣称 |
 | `paged-serving` | **最高，旗舰控制面** | cancellation、bounded backpressure、真实 backend gate、TTFT/TPOT/p99/失败率/显存/queue-depth 容量曲线 | 先搭复杂 K8s 平台、把 scheduler batching 写成 fused GPU batching |
 | `cuflash` | **高，Kernel 深度** | 先修 workspace/stream 生命周期，GPU correctness + sanitizer 后做 4–6 个代表形状的 Nsight 归因 | 为追逐 JD 同时加 MoE、FP4、CuTe；RTX 3060 上冒充新架构收益 |
 | `trifuse` | **中高，框架集成差异化** | 强化 `torch.library`、fake/meta、`torch.export`、dynamic shape 和公平 Triton baseline | 重复 `cuflash` 的全部 CUDA 算子；扩成通用 compiler |

@@ -4,6 +4,16 @@
 > 本文只定义未来工作，不代表任务已经完成，也不代表已经获得新的 GPU、性能或
 > profiler 证据。
 
+当前集成事实（2026-10-05，北京时间）：四位独立只读代理已分别审阅 Serving、压测/
+证据、Kernel 基准和跨仓治理；六项已发现问题修复后完成复审。
+[Serving PR #24](https://github.com/open-infra-ai/paged-serving/pull/24) 已合入默认分支
+（merge `e60a315`，已审 head `30c16f4`），不再以旧 PR #23 或“整改分支未合入”作为
+重复开发理由。独立审阅为代理审阅，不是人工专家认证；本人练习仍未代勾。
+其他仓的逐项状态见 meta 的
+[固定提交集成记录](https://github.com/open-infra-ai/open-infra-ai/blob/master/.agents/notes/implemented/process/2026-10-05-reviewed-batch-integration.md)。
+下面的旧提交测试数字保留原日期与范围；OBS/HTTP/持续 GPU lane 的具体批准与验收
+仍分别待办，多代理与直接合并授权不等于批准新 C ABI 方案。
+
 ## 1. 使用方法
 
 每次只选择一个任务 ID，并把以下“公共执行头”与该任务卡一起发送给 Agent。禁止把整份
@@ -254,11 +264,14 @@ GPU workflow；但是“测试命令退出 0”仍可能包含 GPU case skip，r
 
 ### TRI-P0-003：统一 timing 口径并保留 raw samples
 
+状态（2026-10-04）：部分完成。两投影 FLOPs/bytes、README 墙钟均值与正确性失败
+拒绝计时已有本地改动和 CPU 回归；逐次 raw sample/schema 仍未实现，不能标整项完成。
+
 - **复杂度**：L2。
 - **目标**：`measure_latency`/`measure_metrics` 保留 per-iteration samples，明确 mean、
   median/p50、p95 和同步边界，消除文档与实现不一致。
 - **当前证据**：`trifuse/performance.py` 当前按整段 wall clock 求平均；
-  `trifuse/benchmark/report.py` 和 README 使用的统计描述不完全一致。
+  README 已按均值同步；`trifuse/benchmark/report.py` 仍只保存聚合结果。
 - **前置与范围**：先冻结计时 schema；允许改 performance、benchmark report 和测试；
   禁止只保存聚合值，禁止混用 CPU wall clock 与 CUDA event 后不标注。
 - **验收**：warmup 不进入 samples；每次测量有明确同步；JSON 包含 raw、count、mean、
@@ -465,9 +478,9 @@ GPU workflow；但是“测试命令退出 0”仍可能包含 GPU case skip，r
 
 ## 6. `tiny-llm`
 
-当前边界：已有 GGUF/量化、Tokenizer、Transformer、连续与 paged KV、CUDA Graph、
-W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather 到连续 scratch，
-最后调用连续 attention；因此它是分页 KV 控制面，不是 direct PagedAttention。
+当前边界（2026-10-04）：已有 GGUF/量化、Tokenizer、Transformer、连续与 paged KV、
+CUDA Graph、W8A16、C ABI、direct paged decode 和 split-KV。默认 legacy、split 关闭，
+prefill 保留 gather。9/14–9/15 是 kernel 结果，不证明模型或 Serving 加速。
 
 ### TLLM-P0-001：建立 GGUF/量化兼容性和第二模型 evidence
 
@@ -487,11 +500,14 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### TLLM-P0-002：建立 paged 与 contiguous 的 synthetic oracle
 
+状态：已有实现，复核剩余验收，不从零新增 oracle。当前入口是
+`tests/paged_attention_oracle.h`、`tests/test_paged_oracle.cpp`、`tests/test_paged_direct.cpp`；
+持续 GPU/Sanitizer 门禁是否覆盖原任务矩阵仍需确认，不据文件存在标整项完成。
+
 - **复杂度**：L3。
 - **目标**：新增不依赖外部 GGUF 的 layer/kernel 差分，冻结 direct paged attention 的
   不可变 correctness oracle。
-- **当前证据**：`kernels/paged_kv.cu` 主要证明 scatter/gather；`src/transformer.cpp`
-  的 `attentionPaged` 再调用连续 attention；端到端 FFI 差分依赖真实模型。
+- **当前证据**：上述独立 oracle 与 direct 差分；端到端真实模型证据和 GPU 门禁分别复核。
 - **前置与范围**：只做独立 reference、fixture、测试 API 最小 seam；禁止先写 direct
   kernel，禁止 reference 调用生产 paged helper。
 - **验收**：覆盖 block_size、跨块尾部、GQA/MQA、RoPE position、visible length、
@@ -519,11 +535,13 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### TLLM-P0-004：实现 direct paged decode attention kernel
 
+状态：实现与 kernel A/B 已存在；复核 `kernels/attention.cu::attention_decode_paged`、
+`tests/test_paged_direct.cpp` 和 9/14 DPA raw。后续只补尚缺验收，禁止重复重写 kernel。
+
 - **复杂度**：L4。
 - **目标**：kernel 直接读取物理 K/V pool 与 block table，单 token decode 不再 gather
   完整可见 KV 到连续 scratch。
-- **当前证据**：`kernels/attention.cu::attention_decode` 只接连续 K/V；
-  `kernels/paged_kv.cu` 只负责 scatter/gather。
+- **当前证据**：`kernels/attention.cu::attention_decode_paged` 直接消费 block table/pool，已有独立差分。
 - **前置与范围**：必须先通过 direct-paged design package 和 TLLM-P0-002；第一 PR
   只允许 kernel/header/tests/benchmark seam，禁止同时改 FFI 与 serving。
 - **验收**：API、layout、GQA 映射、block lookup、tail、online softmax、dtype/accumulation、
@@ -534,6 +552,10 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 - **下游**：TLLM-P0-005、TLLM-P1-001。
 
 ### TLLM-P0-005：将 direct decode 接入 Transformer 与 FFI
+
+状态：接入、模式选择和 fallback 已存在，`src/transformer.cpp` 支持
+`TLLM_PAGED_ATTENTION=auto|legacy|direct` 与 `TLLM_ATTN_SPLITKV`；
+`tests/test_ffi_paged_dispatch.cpp` 可定位回归。默认 legacy；只复核缺失验收，不重复接入。
 
 - **复杂度**：L3。
 - **目标**：strategy 1 decode 调用 direct kernel；prefill 暂保留 scatter/gather；
@@ -552,11 +574,15 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### TLLM-P1-001：运行 direct paged 长上下文 A/B
 
+状态：kernel 级已完成两份原始结果，端到端/Serving 配对 A/B 仍待做。
+9/14 DPA 与 9/15 split-KV 的计时可用 `scripts/summarize_dpa.py` 在 CPU 重算；
+历史 profiler 表格不代表原始 profiler 包已经归档。
+
 - **复杂度**：L3。
 - **目标**：比较 legacy gather+continuous attention、direct paged 和 contiguous，
   分别报告 kernel、scratch bytes 和可行的 FFI/serving 影响。
-- **当前证据**：`src/kernel_bench.cpp` 目前以连续 attention 和较短 sequence 为主；
-  CUDA Graph 历史数据不能回答 direct paged 收益。
+- **当前证据**：`src/kernel_bench.cpp --dpa-bench` 支持三路与 split 扫描，已覆盖
+  visible 8–2048；CUDA Graph 历史数据不能替代 direct 的端到端配对实验。
 - **前置与范围**：依赖 TLLM-P0-005 和 GPU gate；默认只改 benchmark/schema/docs；
   禁止 benchmark Agent 修改 kernel。
 - **验收**：shape 覆盖 block boundary 和长上下文；三路同输入/同输出 contract；
@@ -569,32 +595,61 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 ## 7. `paged-serving`
 
 当前边界：已有 BlockPool、调度、429、SSE、取消入口、metrics、closed/Poisson loadgen
-和正式结果包。后续不是“从零实现 serving”，而是关闭主动取消、无界事件队列、指标语义、
-网络失败回归、真实 backend 持续门禁和三引擎公平矩阵。
+和正式结果包。主动取消、有界事件队列、指标语义和网络失败回归已经整改并合入；
+后续不是“从零实现 serving”，而是验证原生 GPU 回收、真实 backend 持续门禁和
+三引擎公平矩阵。
 
 ### PSRV-P0-001：实现请求所有权驱动的主动取消
+
+状态（2026-10-04）：[PR #23](https://github.com/open-infra-ai/paged-serving/pull/23)
+为 OPEN，head `25811e35c2d978f39efd6eb9731dc6fadc9c8a25`，CI check SUCCESS。
+整改分支 [`59d90c8`](https://github.com/open-infra-ai/paged-serving/commit/59d90c84aa0ea849322c18d3c741f8f9eef34dc9)
+已复用 PR 的 RequestGuard/watch 并补有界文本队列、带外终态和失败回收。Rust 1.88
+本地 255 个默认测试与 17 个 doc tests 通过，24 个服务内联与 45 个 HTTP/SSE 测试
+重复 10 轮通过。当时默认分支和 PR #23 未改动；当前集成以顶部 PR #24 记录为准，
+不另写取消实现。真实 CUDA backend / HF / 网络压力仍按下面验收补足。
+
+CPU 真实网络回归
+[`92485dd`](https://github.com/open-infra-ai/paged-serving/commit/92485dd952e9e75bd0b6cea899e0b126694dbb5e)
+只新增测试与笔记，未改生产算法：四个真实 HTTP/1.1 socket 场景覆盖首文本后/无文本
+decode 断连、unary 响应头前断连和 shutdown 的 SSE 终态。HTTP inflight 先归零，
+再放行在途同步步骤；取消=1、failed=0、逻辑 KV/active=0，释放通知恰好一次。
+前三个场景均在原实例成功服务四个后续探针，不声称同时占满四槽；shutdown 发出
+一个 error、一个 DONE、无 usage，readyz=503。四个用例连续 50 轮通过，完整默认
+套件实际 280 个测试加 17 个 doc tests，真实 tokenizer 明确 1 个 ignored。
+[测试时序与限制](https://github.com/open-infra-ai/paged-serving/blob/92485dd952e9e75bd0b6cea899e0b126694dbb5e/.agents/notes/implemented/feature/2026-10-04-bounded-events-and-cancellation.md)
+明确受控 CPU probe 不等于原生登记/显存 oracle；许可等待的 runtime 交接仅属于
+夹具。不能以这组测试替代 OBS 或真实 GPU HTTP 验收，也不是独立 review/生产负载
+调优完成；P1-002 的具体设计批准仍待完成。
 
 - **复杂度**：L3。
 - **目标**：consumer 关闭、handler abort、`n>1` 部分准入失败时主动取消所有已准入请求，
   不等待下一次非空 chunk send failure。
 - **当前证据**：`src/server.rs` 的 submit/engine loop/stream response，
   `src/engine.rs::cancel_request`、`src/scheduler.rs::cancel_by_request_id` 和现有断连测试。
+  `tests/server_tcp_lifecycle.rs` 另提供 CPU 实际 socket 证据，区别于 Router oneshot。
 - **前置与范围**：先完成取消状态机设计；允许改 server、最小 engine/scheduler 接口和
   integration tests；禁止新建第二套 request state machine。
 - **验收**：pending/prefill/decode、HF 暂无文本、unary abort、SSE disconnect、n>1
   partial admission 全覆盖；每条路径 request slot、KV block、backend sequence 回基线。
 - **命令**：server integration cancel filters、engine/scheduler resource tests、
-  `cargo clippy --all-targets -- -D warnings`。
+  `cargo test --locked --test server_tcp_lifecycle`、`cargo clippy --all-targets -- -D warnings`。
 - **证据/停止**：必须证明 exactly-once terminal/release；若 cancellation 与 response
   ownership 无法线性化，停在设计评审。
 - **下游**：PSRV-P0-002/003、PSRV-P1-003。
 
 ### PSRV-P0-002：为 SSE 和 fan-in 建立有界背压
 
+状态（2026-10-04）：上述整改分支已完成 CPU 验收：mailbox 默认 64、可配置、
+引擎 try_send、overflow 明确失败、成功终态先排空文本、unary 不订阅文本。
+多候选直接 SelectAll 拉取，删除第二层 fan-in 队列与转发任务；队列项数有界不等于
+全进程字节内存有界。默认容量仍待网络负载调优，不将此标为生产验收完成。
+
 - **复杂度**：L3。
 - **目标**：替换单请求事件和 `n>1` fan-in 的无界队列，冻结慢消费者策略。
-- **当前证据**：`src/server.rs` 使用 `mpsc::UnboundedSender/Receiver`，fan-in 也新建
-  unbounded channel；submission queue 虽有 1024 上限，但 token event 没有。
+- **当前证据**：默认分支已有有界 `RequestEvents`/`EventSender`，
+  `stream_response_multi` 已替换无界 fan-in，具体实现和测试见
+  [决策笔记](https://github.com/open-infra-ai/paged-serving/blob/59d90c84aa0ea849322c18d3c741f8f9eef34dc9/.agents/notes/implemented/feature/2026-10-04-bounded-events-and-cancellation.md)。
 - **前置与范围**：依赖 PSRV-P0-001 的 ownership；允许改 server、config、error 和测试；
   禁止阻塞整个 engine loop、禁止无限缓冲、禁止静默丢 token。
 - **验收**：容量可配置且有安全默认；慢 consumer 产生明确 cancel/error/overflow policy；
@@ -606,11 +661,25 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### PSRV-P0-003：冻结服务指标语义并补生命周期回归
 
+状态（2026-10-04）：整改分支
+[`3039093`](https://github.com/open-infra-ai/paged-serving/commit/3039093ddc2fb6ddcab9508e4024bc84a61816c7)
+通过 CPU 验收：类型化 Cancelled、按候选的独立 cancelled 计数，JSON/准入/后端/
+SSE 错误按 HTTP 请求去重，未读 body 的后端失败可观测。Rust 1.88 通过 260 个默认
+测试与 17 个 doc tests；25 个服务内联与 48 个 HTTP/SSE 测试重复 10 轮通过。
+[远端 CI](https://github.com/open-infra-ai/paged-serving/actions/runs/37170403585) 的 Rust 1.88
+MSRV 与 stable 检查均通过，head 对应 `3039093`。
+初次验收时默认分支未合入；当前集成见顶部。取消/背压的真实网络压力与 CUDA 回收
+不算这项新增 CPU 验收成果。
+
 - **复杂度**：L2。
 - **目标**：明确 requests/errors/inflight/streaming 和 engine counters 的计数单位、开始/
   结束时点及错误路径。
 - **当前证据**：`src/server.rs::ServerMetrics/SharedEngineMetrics` 与 `/metrics` 已存在；
-  现有测试主要验证名称，流式 response 构造后 inflight guard 已释放。
+  已合入的整改把 inflight guard 移入 SSE body，数值回归覆盖 1→0 和 n>1 不乘候选数。
+  类型化终态、完整 HELP、HTTP 去重与末步溢出区分见
+  [指标决策](https://github.com/open-infra-ai/paged-serving/blob/3039093ddc2fb6ddcab9508e4024bc84a61816c7/.agents/notes/implemented/bug-fix/2026-10-04-typed-cancellation-and-metrics.md)，
+  不重复开发已合入的实现。engine failed 排除主动取消，HTTP errors 不是全体
+  5xx；Rust public 字段与 enum 的 source-breaking change 已记录。
 - **前置与范围**：依赖取消/背压设计；允许改 metrics 实现、文档和数值测试；
   禁止改变指标含义却沿用原名而不记录 breaking change。
 - **验收**：malformed JSON、429、admission error、SSE terminal error、disconnect、
@@ -619,15 +688,58 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
   engine metrics tests 和 clippy。
 - **证据/停止**：若 inflight 定义是 handler lifetime 还是 generation lifetime 未决，
   先由 reviewer 选择并更新 HELP 文本。
-- **下游**：PSRV-P1-003/004。
+- **下游**：PSRV-P0-004 的 CLI/真实传输和 P1-001 结果语义回归已审阅并合入；
+  继续评审原生 OBS 与真实后端门禁，PSRV-P1-003/004 的进入条件不变。
 
 ### PSRV-P0-004：为 loadgen 补真实 HTTP/SSE 失败回归
+
+状态（2026-10-04）：整改分支
+[`69dafbe`](https://github.com/open-infra-ai/paged-serving/commit/69dafbe9e4f726fa8f5b472666e4679945b516b3)
+通过 CLI/本地 TCP 验收：4 个新用例启动真实 loadgen 二进制，覆盖 closed/Poisson、
+warmup 排除、固定 seed 计划、原始记录/summary、错误详情、coverage 与自定义路径。
+264 个默认测试与 17 个 doc tests 本地通过；CLI 重复 10 轮、60 个子进程通过。
+[远端 CI](https://github.com/open-infra-ai/paged-serving/actions/runs/37172586197) 的 Rust 1.88
+MSRV 与 stable 检查均通过，head 对应 `69dafbe`。
+测量 RNG 从 seed 重置，测量 prompt 按 measured_index 选择；绝对 deadline 迟到时可能
+集中发压，所以分开记录计划与实际客户端 dispatch，不宣称服务端到达时刻或 GPU 性能。
+初次验收时默认分支未合入，当前集成见顶部；历史结果不回填新字段，详见
+[CLI 决策与兼容性](https://github.com/open-infra-ai/paged-serving/blob/69dafbe9e4f726fa8f5b472666e4679945b516b3/.agents/notes/implemented/testing/2026-10-04-loadgen-cli-reproducibility.md)。
+
+正文超时分类修复
+[`92a2cf5`](https://github.com/open-infra-ai/paged-serving/commit/92a2cf50436df166616accc2210c2b580f1a20df)
+已有非 skip 的本地 TCP 与真实二进制验收：响应头后/部分文本后的总预算到期记为
+timeout，不混入 stream_error；正文截断和含 backend timeout 的 SSE error 消息仍是
+stream_error。部分 chunk/usage/finish_reason 保留在 raw，但六个失败请求不进入成功
+延迟样本和 token total，tok/s 为 null。CLI 退出 0 表示完整采集负结果，不表示请求成功。
+21 个 loadgen 测试、5 个 CLI 用例连续 10 轮通过（70 个子进程）；完整默认套件实际
+267 个测试加 17 个 doc tests，真实 tokenizer 为 1 个 ignored。分类和限制见
+[技术笔记](https://github.com/open-infra-ai/paged-serving/blob/92a2cf50436df166616accc2210c2b580f1a20df/.agents/notes/implemented/testing/2026-09-15-real-http-sse-regression.md)。
+没有更改请求预算、调度或 C ABI；不是服务端超时取消或 GPU 回收验收。
+
+异常 completion 成功误判修复
+[`9bd6836`](https://github.com/open-infra-ai/paged-serving/commit/9bd6836b9acee64b8f1dcd02b31c10d29b06763f)
+已有真实 HTTP/CLI 正反例验收：无意义 JSON、非法/重复已知字段、非法 usage、多候选
+和仅 DONE 记为 protocol_error；合法空输出、零 token、usage-only 和扩展字段仍成功。
+tokenizer 对部分文本的诊断计数不能改变失败状态，也不进入成功性能。修复前 6 个
+单请求用例及新增 CLI 用例失败；修复后 29 个 loadgen 测试与 6 个 CLI 用例连续
+10 轮通过（80 个子进程），完整默认套件实际 276 个测试加 17 个 doc tests，真实
+tokenizer 为 1 个明确 ignored。细节与兼容代价见
+[分类笔记](https://github.com/open-infra-ai/paged-serving/blob/9bd6836b9acee64b8f1dcd02b31c10d29b06763f/.agents/notes/implemented/testing/2026-09-15-real-http-sse-regression.md)。
+原始结果、schema、C ABI 和请求预算不变；不是完整 OpenAI 协议认证，也没有新增
+GPU 或多引擎实测。独立代理审阅和默认分支集成见顶部当前状态；P1-002/OBS 具体
+设计批准仍待完成。
 
 - **复杂度**：L2。
 - **目标**：用本地可控 HTTP server 验证 `run_request`、closed/Poisson 和 summary，
   覆盖全部错误分类。
-- **当前证据**：`src/bin/loadgen.rs` 已实现 timeout、429、4xx、5xx、connection、
-  stream/protocol/no_done 等分类，但大量测试仍偏解析器/纯函数。
+- **当前证据**（2026-10-04 复核）：`src/bin/loadgen.rs` 已有一次性本地 TCP server，
+  初次验收的 11 个 `run_request_*` 异步测试覆盖成功 usage、CRLF、跨 TCP 写分割 UTF-8、
+  HTTP 错误状态、connection refused、timeout、非法 JSON/UTF-8、error frame、
+  missing DONE 与 usage 缺失；包含在第三批完整 cargo test 中。不能按旧任务描述
+  从零重建临时 server；seeded Poisson 间隔、warmup 排除、token coverage 和 summary
+  已有纯函数测试；负载执行到输出文件的 CLI 回归由 `tests/loadgen_cli.rs` 补齐。
+  P1-001 的语义 validator 也已有自动验收与独立代理审阅；不重复开发。剩余是长负载、
+  真实 GPU 与服务端网络回收。
 - **前置与范围**：允许在 loadgen tests 内建临时 server，必要时最小拆出 `src/loadgen.rs`；
   禁止长 sleep、外网依赖或把 chunk count 当 token count。
 - **验收**：LF/CRLF、split UTF-8、invalid JSON、server error、无 `[DONE]`、usage 有/无、
@@ -639,16 +751,33 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
 
 ### PSRV-P1-001：升级正式结果语义校验和收敛审计
 
+状态（2026-10-04）：整改分支
+[`a7fef1e`](https://github.com/open-infra-ai/paged-serving/commit/a7fef1e523132fe5e52bf22141afdc97db53b682)
+已实现并通过自动验收：36 个标准库测试；5 个存量包共 66 个 run 只读重验通过，
+三个正式包使用 `--formal`，两个 canary 使用基础模式。9/7 的 c2/c8 和三档 Poisson
+未收敛、83 个 429 保留；图表只生成在临时目录，不改历史包。
+[决策与校验限制](https://github.com/open-infra-ai/paged-serving/blob/a7fef1e523132fe5e52bf22141afdc97db53b682/.agents/notes/implemented/testing/2026-10-04-serving-result-semantics.md)
+明确数据内部一致不等于 GPU correctness 或稳定 SLO；审阅与集成见顶部当前状态。
+[远端 CI](https://github.com/open-infra-ai/paged-serving/actions/runs/37187094976) 的
+`serving-evidence`、Rust 1.88 MSRV 和 stable 检查均通过，head 对应 `a7fef1e`。
+
+同日解析门禁补强 [`ffc597a`](https://github.com/open-infra-ai/paged-serving/commit/ffc597ae10882b5410f869863ed5cbfc9d56eb78)
+拒绝任意层级重复 JSON 键（包括相同值、转义同名）与溢出为无穷大的浮点字面量。
+四类证据文件共用入口；CLI 返回 1、绘图不创建输出、原始文件不改写。
+完整离线回归为 40 个测试，五个存量包的 66 个 run 只读重验通过；原来的收敛规则和
+负结果保持不变。这是已复现缺陷的修复，不把 P1-001 改写成持续扩展的大项目。
+
 - **复杂度**：L2。
 - **目标**：validator 校验 per-request、summary、metadata、重复配置和 methodology，
   `plots.py` 拒绝混合不兼容 run。
-- **当前证据**：`benchmarks/serving/validate_results.py` 当前主要检查文件/schema；
-  `methodology.md` 已要求 3 repetitions 和 >10% 未收敛。
+- **当前证据**：`benchmarks/serving/validate_results.py` 联合重算 JSONL/summary/metadata，
+  产出收敛诊断；绘图复用门禁、拒绝不兼容系列和已知 token 子集平均。
 - **前置与范围**：依赖 PSRV-P0-004；允许改 validator/plots/methodology/template 和新增
   fixtures；禁止按结果好坏判通过或重写 raw data。
 - **验收**：total=success+failed、error totals、sample count、coverage、JSONL count、
   throughput/wall time、重复参数一致；波动输出 machine-readable `non_converged`。
-- **命令**：新增 Python tests；对历史 2026-09-07 正式包运行 `--formal` 和 plots。
+- **命令**：`PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s benchmarks/serving -p 'test_*.py' -v`；
+  对历史 2026-09-07 正式包运行 `--formal --json`，plots 使用独立 `--out-dir`。
 - **证据/停止**：旧包若不通过必须给迁移诊断；warning/hard failure 未达成一致时升级
   methodology 评审。
 - **下游**：PSRV-P1-003/004。
@@ -660,14 +789,62 @@ W8A16 和 C ABI。strategy 1 当前每层先 scatter 到物理 pool，再 gather
   blocked/failure，不允许测试函数提前 return 后显示 passed。
 - **当前证据**：`Cargo.toml`、`build.rs`、`tests/tiny_llm_backend.rs`、
   `tests/tiny_llm_text_e2e.rs`、`tests/tokenizer_real_diff.rs`。
+  整改分支 [`b83dcf8`](https://github.com/open-infra-ai/paged-serving/commit/b83dcf843906f5ab8a2eed18ab7077be074d8e62)
+  已修复测试提前返回的假绿：默认 tokenizer 明确 ignored，显式执行缺输入失败；
+  CPU CI 检查缺 tokenizer/fixture 的实际失败出口。
+  [执行笔记与原始输出](https://github.com/open-infra-ai/paged-serving/blob/b83dcf843906f5ab8a2eed18ab7077be074d8e62/.agents/notes/implemented/testing/2026-10-04-real-test-execution-gates.md)
+  记录 RTX 3060 Laptop 上五个 GPU 用例和 30 条 tokenizer fixture 实际通过，
+  完整 feature 套件 272 个测试加 17 个 doc tests、零忽略；测试时 paged 工作树
+  为 dirty，测试文件以 SHA-256 绑定，不称为 clean-commit benchmark。
+  这是测试执行语义的局部修复与单机功能验证，不是 L3 设计批准或完整任务关闭。
+  [`4b09556` 的终态复用证据](https://github.com/open-infra-ai/paged-serving/blob/4b095567f70ae5b835826e5897a9a42c7ac53b8e/.agents/notes/implemented/testing/2026-10-04-real-backend-terminal-reuse.md)
+  进一步实际验证策略 1/2 的越界失败后四请求复用，以及 prefill/decode 后取消、
+  同实例再服务；正常取消累计 8 cancelled、8 completed、0 failed。
+  拦截释放通知的对照在连续 KV 中使四请求分配失败，但分页 KV 仍能成功：
+  这个探针不能独立认证分页登记回收。策略 2 完整 feature 套件通过 274 个测试与
+  17 个 doc tests、零忽略；不是 HTTP 断连、kernel 抢占或显存字节回收证明。
 - **前置与范围**：冻结跨仓 artifact/ABI/模型提供方式；允许改 build、workflow 和真实
   backend tests；禁止提交模型/secret 或下载 floating revision。
 - **验收**：feature link、load、greedy、3 并发、错误路径资源回收、tokenizer/text
   oracle；artifact/model 绑定 commit/SHA-256。
 - **命令**：以任务卡环境变量运行三个现有 integration tests，再运行
-  `cargo test --features tiny-llm`。
+  `cargo test --locked --features tiny-llm -- --include-ignored --test-threads=1`；
+  tokenizer 单独运行需 `--ignored`；基础文本验证用策略 1，生命周期矩阵分别运行
+  策略 1/2，固定 max_seqs=4、decode_reserve=512，
+  路径和静态库来源按技术仓 README 与执行笔记复核。
+- **剩余验收**：完整 GPU lane 的 G0-G8 设计审批、runner/模型/artifact 提供方式与
+  持续运行证据；已完成的审阅/默认分支集成不替代真实 GPU HTTP 取消回收验收。
+  分页序列登记观察已有下方 OBS 提案，尚待批准与实现，不将“利用率归零且可复用”
+  当成全部回收。
+  Hello 仅匹配历史全序列 oracle，数学请求只检查公共前缀；不能称本次独立 llama.cpp
+  对照，也不能凭前缀断言将分歧归因于量化。
 - **证据/停止**：无 GPU/合法模型/artifact 时 blocked；ABI 不匹配立即联合评审两仓。
 - **下游**：PSRV-P1-004。
+
+### PSRV-P1-002 后续切片：先观察，再扩实验
+
+以已合入的整改提交为开发基线，执行前重新确认默认分支。下面是同一 Runtime/Serving
+旗舰的依赖顺序，不新增总路线；每批只选择一个切片。独立审阅与默认分支集成单列，
+主代理源码自查不是独立 reviewer 的验收，也不自动合并 PR #23。
+
+| 顺序 / 任务 | 所有者与改动范围 | 进入条件 | 可验收交付与停止点 |
+|---|---|---|---|
+| 0：独立审阅与默认分支集成（已完成） | 独立只读代理审阅；主代理修复、验证与合并 | 固定 head 30c16f4，PR #24 已合入 | 覆盖取消线性化、事件终态、错误去重、loadgen 与结果门禁；确定性 EOF/终态竞态修复经复审，最终 head CI 成功，不把测试全绿当作审阅 |
+| 1：`PSRV-P1-002/OBS`（L3） | tiny-llm 原生查询、paged FFI/适配器与测试；meta live 契约 | 用户明确批准下面的 G0-G8 提案；共同关闭评审问题 | 真实原生登记：初始 0，四请求执行中 4，完成/取消/失败后 0；拦截释放时分页原生数量非零。两策略、Sanitizer、双仓 commit/库 SHA；只关闭 OBS，不称 GPU lane 完成 |
+| 2：`PSRV-P1-002/HTTP`（L3） | paged 的本地真实 TCP/SSE 与后端生命周期测试；生产修复另列最小范围 | OBS 可观察；先批准 socket 断开、SSE body drop 与终态时序设计 | 客户端收到首帧后断连，后端终态后登记/active/逻辑 KV 回基线，同实例再服务成功；保留计数与 raw。不能以 Router oneshot 或直接 engine.cancel 替代 TCP 证据，也不宣称 kernel 抢占 |
+| 3：`PSRV-P1-002/LANE`（L3） | paged 的严格执行脚本与 provenance manifest；先使用现有本机 GPU | OBS/HTTP 已验收；脚本、输入与 artifact 设计批准 | 从 fixed-source 构建库并串行跑矩阵；缺模型/库/GPU 非零、实际 test 数与 ignored/skip 可审计、记录 SHA 与原始退出码。持续运行证据另验；不得直接注册 self-hosted runner、提交模型或租云 GPU |
+| 4：`PSRV-P1-003`（L3） | paged metrics sampler/sweep 与取消/HOL/fairness 场景 | 真实回收与严格 lane 已过；遥测格式、时钟和扰动对照设计批准 | raw 带单调时间戳/测量窗口；scrape 失败是 unavailable；采样 A/B 与失败/取消计数完整。仅验证 harness 时保持性能 not_measured |
+| 5：`PSRV-P1-004`（L4） | 现有引擎的固定版本实验与新结果包；不同时优化实现 | 上述 correctness 与遥测就绪，逐引擎 canary 通过 | 每格至少 3 次，固定模型/量化/数据/seed，保留未收敛、OOM、429 与启动失败；外部引擎不能语义配对就保留 blocked 格，不凑三引擎结论 |
+
+当前只完成 OBS 的
+[具体设计提案](https://github.com/open-infra-ai/open-infra-ai/blob/17c5280b969cad374cbd739586fb7a1b315ae9e4/.agents/notes/proposed/architecture/2026-10-04-backend-sequence-observation.md)，
+状态 `proposed / pending`：只读查询 C++ 登记表，不扩 HTTP 指标、不改调度/释放策略，
+不把逻辑利用率或 Rust shadow 表当 oracle。接口、所有权、故障对照、兼容、验证和回滚
+均在技术事实单源中，本仓只引用。审批只覆盖 OBS，不连带批准 HTTP、lane 或性能实验。
+
+本人答辩不等待全链完工：按现有 `INTERVIEW_MATRIX.md` 的 Q11 闭卷解释分页负对照
+为什么仍可复用、三个统计层为什么不能互相替代，记录本人答案再评分；Agent 不代勾。
+若时间只能覆盖一个实现，优先关闭 OBS 并复盘当前负结果，不扩到新框架或第二旗舰。
 
 ### PSRV-P1-003：接入服务遥测并固化取消/HOL/fairness 场景
 

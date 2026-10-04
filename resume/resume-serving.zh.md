@@ -21,8 +21,8 @@
 - 实现 Paged KV 的 BlockPool / PageTable、continuous batching、准入控制、优先级和 decode reserve，
   通过 OpenAI 兼容 HTTP/SSE API 承载请求生命周期；调度资源守恒由属性测试约束。
 - 通过 C ABI 接入 `tiny-llm` 真实 CUDA 后端并上传 `block_tables`。3 并发 e2e 用于证明
-  跨语言生命周期和 greedy 输出正确性；正式 closed-loop / Poisson 容量报告仍在进行，
-  不把该用例表述为 QPS 或生产能力。
+  跨语言生命周期和 greedy 输出正确性。[正式 closed-loop / Poisson 21-run 报告](https://github.com/open-infra-ai/paged-serving/tree/master/benchmarks/serving/results/2026-09-07-RTX3060Laptop-paged-serving-p2-batch-postprocess-streaming)
+  绑定 GPU、模型、双仓 commit 与原始请求；保留 429 和未收敛项，不将其包装为稳定容量或生产 SLO。
 
 ### [tiny-llm](https://github.com/open-infra-ai/tiny-llm)｜真实 CUDA 推理后端
 
@@ -34,7 +34,8 @@
 
 ## 技能
 
-- **Serving**：continuous batching、Paged KV、请求状态机、准入控制、背压/取消、HTTP/SSE、OpenAI API 兼容。
+- **Serving**：continuous batching、Paged KV、请求状态机、准入/429、HTTP/SSE；
+  有界背压与主动取消的完整保障仍待验证，不能把未合入 PR 写成本人已交付能力。
 - **评测**：closed-loop、Poisson、TTFT/TPOT、成功率、429、token coverage、`summary.json` / `per_request.jsonl` 原始产物契约。
 - **系统与运行时**：Rust、C++17、CUDA C++、C ABI / FFI、GGUF、W8A16、KV Cache、CMake、CI、属性测试。
 
